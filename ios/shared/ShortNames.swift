@@ -28,7 +28,6 @@ public enum ShortNames {
     "bw": "borderWidth",
     "b": "bottom",
     "bs": "buttonStyle",
-    "csa": "chartScrollableAxes",
     "chk": "checked",
     "clip": "clipped",
     "c": "color",
@@ -164,7 +163,9 @@ public enum ShortNames {
     "valig": "verticalAlignment",
     "wt": "weight",
     "w": "width",
+    "xgs": "xAxisGridStyle",
     "xav": "xAxisVisibility",
+    "ygs": "yAxisGridStyle",
     "yav": "yAxisVisibility",
     "zi": "zIndex",
   ]

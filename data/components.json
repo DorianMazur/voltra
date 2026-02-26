@@ -150,11 +150,12 @@
     "rotationEffect": "re",
     "border": "bd",
     "clipped": "clip",
-    "chartScrollableAxes": "csa",
     "foregroundStyleScale": "fss",
     "legendVisibility": "lgv",
     "marks": "mrk",
+    "xAxisGridStyle": "xgs",
     "xAxisVisibility": "xav",
+    "yAxisGridStyle": "ygs",
     "yAxisVisibility": "yav"
   },
   "styleProperties": [
@@ -1263,11 +1264,23 @@
           "enum": ["automatic", "visible", "hidden"],
           "description": "Show or hide the x-axis"
         },
+        "xAxisGridStyle": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Configure x-axis grid line style"
+        },
         "yAxisVisibility": {
           "type": "string",
           "optional": true,
           "enum": ["automatic", "visible", "hidden"],
           "description": "Show or hide the y-axis"
+        },
+        "yAxisGridStyle": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Configure y-axis grid line style"
         },
         "legendVisibility": {
           "type": "string",
@@ -1280,12 +1293,6 @@
           "optional": true,
           "jsonEncoded": true,
           "description": "Map of series name to color string"
-        },
-        "chartScrollableAxes": {
-          "type": "string",
-          "optional": true,
-          "enum": ["horizontal", "vertical"],
-          "description": "Enable scrolling on the given axis"
         }
       }
     }

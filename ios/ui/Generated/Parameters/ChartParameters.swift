@@ -16,15 +16,18 @@ public struct ChartParameters: ComponentParameters {
   /// Show or hide the x-axis
   public let xAxisVisibility: String?
 
+  /// Configure x-axis grid line style
+  public let xAxisGridStyle: String?
+
   /// Show or hide the y-axis
   public let yAxisVisibility: String?
+
+  /// Configure y-axis grid line style
+  public let yAxisGridStyle: String?
 
   /// Show or hide the chart legend
   public let legendVisibility: String?
 
   /// Map of series name to color string
   public let foregroundStyleScale: String?
-
-  /// Enable scrolling on the given axis
-  public let chartScrollableAxes: String?
 }

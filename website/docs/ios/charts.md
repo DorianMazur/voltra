@@ -78,7 +78,7 @@ Vertical bars.
 - `color` (string, optional): Fill color.
 - `cornerRadius` (number, optional): Rounded bar corners in points.
 - `width` (number, optional): Fixed bar width in points.
-- `stacking` (string, optional): `"standard"` (default, stacked), `"grouped"` (side by side), `"normalized"`, or `"unstacked"`.
+- `stacking` (string, optional): `"grouped"` (side by side).
 
 ```tsx
 <Voltra.Chart>
@@ -137,7 +137,6 @@ Filled area chart — useful for visualizing volume or ranges.
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Fill color.
 - `interpolation` (string, optional): Same options as LineMark.
-- `stacking` (string, optional): `"standard"`, `"normalized"`, or `"unstacked"`.
 
 ```tsx
 <Voltra.Chart>
@@ -190,9 +189,11 @@ A horizontal or vertical reference line. Unlike other marks, RuleMark has no `da
 **Parameters:**
 
 - `yValue` (number, optional): Draw a horizontal line at this y value.
-- `xValue` (string, optional): Draw a vertical line at this x value.
+- `xValue` (string | number, optional): Draw a vertical line at this x value.
 - `color` (string, optional): Line color.
 - `lineWidth` (number, optional): Stroke width in points.
+
+If both `xValue` and `yValue` are provided, Voltra renders both lines.
 
 ```tsx
 <Voltra.Chart>
@@ -253,7 +254,6 @@ The `<Voltra.Chart>` container accepts these props in addition to the standard V
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
 | `legendVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the legend |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
-| `chartScrollableAxes` | `"horizontal" \| "vertical"` | Enable scrolling on an axis (iOS 17+) |
 
 ## Multi-Series Charts
 
@@ -275,7 +275,7 @@ Add a `series` field to your data points to create grouped or stacked charts. Us
 
 Without `foregroundStyleScale`, SwiftUI assigns colors automatically.
 
-To show grouped bars (side by side) instead of stacked, set `stacking="grouped"`:
+To show grouped bars (side by side), set `stacking="grouped"`:
 
 ```tsx
 <Voltra.Chart foregroundStyleScale={{ A: "#4285f4", B: "#ea4335" }}>
@@ -314,6 +314,10 @@ Hide axes and legend for a clean, compact visualization:
 ```
 
 ## Styling the Chart Container
+
+## Widget / Live Activity Notes
+
+In WidgetKit and Live Activity surfaces, gesture-driven chart scrolling is not applicable. Voltra charts are optimized for static rendering in those contexts.
 
 The `<Voltra.Chart>` component supports the full Voltra style system on its container — padding, background, borders, corner radius, shadows, and sizing all work:
 

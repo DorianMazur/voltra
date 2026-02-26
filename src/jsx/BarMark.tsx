@@ -1,4 +1,5 @@
 import { createElement } from 'react'
+
 import type { ChartDataPoint } from './chart-types.js'
 
 export const VOLTRA_MARK_TAG = Symbol.for('VOLTRA_MARK_TAG')
@@ -6,7 +7,7 @@ export const VOLTRA_MARK_TAG = Symbol.for('VOLTRA_MARK_TAG')
 export type BarMarkProps = {
   data: ChartDataPoint[]
   color?: string
-  stacking?: 'standard' | 'normalized' | 'unstacked' | 'grouped'
+  stacking?: 'grouped'
   cornerRadius?: number
   width?: number
 }

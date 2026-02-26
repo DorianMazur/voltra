@@ -48,6 +48,34 @@ public struct VoltraChart: VoltraView {
     }
   }
 
+  private func bool(_ v: JSONValue) -> Bool? {
+    if case let .bool(value) = v { return value }
+    return nil
+  }
+
+  private func parseAxisGridStyle(from raw: String?) -> AxisGridStyle? {
+    guard let raw,
+          let data = raw.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { return nil }
+
+    let props = dict.compactMapValues { jsonValue(from: $0) }
+    if props.isEmpty { return nil }
+
+    let visible = props["v"].flatMap(bool) ?? props["visible"].flatMap(bool)
+    let color = (props["c"] ?? props["color"]).flatMap {
+      if case let .string(value) = $0 { return JSColorParser.parse(value) }
+      return nil
+    }
+    let lineWidth = (props["lw"] ?? props["lineWidth"]).flatMap(num).map { CGFloat($0) }
+    let dash = ((props["d"] ?? props["dash"]).flatMap {
+      if case let .array(values) = $0 { return values.compactMap(num).map { CGFloat($0) } }
+      return nil
+    })
+
+    return AxisGridStyle(visible: visible, color: color, lineWidth: lineWidth, dash: dash)
+  }
+
   private func wireColor(_ props: [String: JSONValue]) -> Color? {
     guard case let .string(s)? = props["c"] else { return nil }
     return JSColorParser.parse(s)
@@ -89,6 +117,19 @@ public struct VoltraChart: VoltraView {
     }
   }
 
+  private func parseLegendItems(from raw: String?) -> [ChartLegendItem] {
+    guard let raw,
+          let data = raw.data(using: .utf8),
+          let pairs = try? JSONSerialization.jsonObject(with: data) as? [[String]],
+          !pairs.isEmpty
+    else { return [] }
+
+    return pairs.compactMap { p -> ChartLegendItem? in
+      guard p.count >= 2, let color = JSColorParser.parse(p[1]) else { return nil }
+      return ChartLegendItem(label: p[0], swatch: color)
+    }
+  }
+
   /// Unpack [x, y] or [x, y, series] tuples into typed values.
   private func xy(_ pt: [JSONValue]) -> (xStr: String?, xNum: Double?, y: Double, series: String?) {
     guard pt.count >= 2 else { return (nil, nil, 0, nil) }
@@ -112,16 +153,26 @@ public struct VoltraChart: VoltraView {
 
   public var body: some View {
     let wireMarks = params.marks.flatMap { parseMarks(from: $0) } ?? []
+    let xAxisVis = visibility(params.xAxisVisibility)
+    let yAxisVis = visibility(params.yAxisVisibility)
+    let xAxisGridStyle = parseAxisGridStyle(from: params.xAxisGridStyle)
+    let yAxisGridStyle = parseAxisGridStyle(from: params.yAxisGridStyle)
+    let legendVis = visibility(params.legendVisibility)
+    let legendItems = parseLegendItems(from: params.foregroundStyleScale)
 
     Chart {
       buildAll(wireMarks)
     }
-    .chartXAxis(visibility(params.xAxisVisibility))
-    .chartYAxis(visibility(params.yAxisVisibility))
-    .chartLegend(visibility(params.legendVisibility))
     .applyForegroundStyleScale(params.foregroundStyleScale)
-    .applyScrollableAxes(params.chartScrollableAxes)
-    .applyStyle(element.style)
+    .applyChartStyle(
+      element.style,
+      xAxisVisibility: xAxisVis,
+      yAxisVisibility: yAxisVis,
+      xAxisGridStyle: xAxisGridStyle,
+      yAxisGridStyle: yAxisGridStyle,
+      legendVisibility: legendVis,
+      legendItems: legendItems
+    )
   }
 
   // MARK: - ChartContent
@@ -443,9 +494,10 @@ public struct VoltraChart: VoltraView {
     let props = m.props
     let lw: CGFloat? = props["lw"].flatMap(num).map { CGFloat($0) }
     let stroke: StrokeStyle? = lw.map { StrokeStyle(lineWidth: $0) }
+    let c = wireColor(props)
 
     if let yv = props["yv"].flatMap(num) {
-      if let c = wireColor(props) {
+      if let c {
         if let stroke {
           Charts.RuleMark(y: .value("y", yv)).lineStyle(stroke).foregroundStyle(c)
         } else {
@@ -456,8 +508,10 @@ public struct VoltraChart: VoltraView {
       } else {
         Charts.RuleMark(y: .value("y", yv))
       }
-    } else if case let .string(xv)? = props["xv"] {
-      if let c = wireColor(props) {
+    }
+
+    if case let .string(xv)? = props["xv"] {
+      if let c {
         if let stroke {
           Charts.RuleMark(x: .value("x", xv)).lineStyle(stroke).foregroundStyle(c)
         } else {
@@ -469,7 +523,7 @@ public struct VoltraChart: VoltraView {
         Charts.RuleMark(x: .value("x", xv))
       }
     } else if let xv = props["xv"].flatMap(num) {
-      if let c = wireColor(props) {
+      if let c {
         if let stroke {
           Charts.RuleMark(x: .value("x", xv)).lineStyle(stroke).foregroundStyle(c)
         } else {
@@ -515,14 +569,13 @@ public struct VoltraChart: VoltraView {
 
       if let c = wireColor(props) {
         Charts.SectorMark(
-          angle: .value(category, value),
+          angle: .value("value", value),
           innerRadius: inner, outerRadius: outer, angularInset: inset
         )
-        .foregroundStyle(by: .value("category", category))
         .foregroundStyle(c)
       } else {
         Charts.SectorMark(
-          angle: .value(category, value),
+          angle: .value("value", value),
           innerRadius: inner, outerRadius: outer, angularInset: inset
         )
         .foregroundStyle(by: .value("category", category))
@@ -567,7 +620,170 @@ private func jsonValue(from value: Any) -> JSONValue? {
 // MARK: - View helpers for chart-level modifiers
 
 @available(iOS 16.0, macOS 13.0, *)
+private struct ChartLegendItem: Identifiable {
+  let label: String
+  let swatch: Color
+  var id: String { label }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
+private struct AxisGridStyle {
+  let visible: Bool?
+  let color: Color?
+  let lineWidth: CGFloat?
+  let dash: [CGFloat]?
+}
+
+@available(iOS 16.0, macOS 13.0, *)
 private extension View {
+  @ViewBuilder
+  func applyChartStyle(
+    _ optionalStyle: [String: JSONValue]?,
+    xAxisVisibility: Visibility,
+    yAxisVisibility: Visibility,
+    xAxisGridStyle: AxisGridStyle?,
+    yAxisGridStyle: AxisGridStyle?,
+    legendVisibility: Visibility,
+    legendItems: [ChartLegendItem]
+  ) -> some View {
+    if let optionalStyle {
+      let anyStyle = optionalStyle.mapValues { $0.toAny() }
+      let (layout, decoration, rendering, _) = StyleConverter.convert(anyStyle)
+      let styled = modifier(CompositeStyleModifier(
+        layout: layout,
+        decoration: decoration,
+        rendering: rendering,
+        contentAlignment: .topLeading
+      ))
+      if let color = JSColorParser.parse(anyStyle["color"]) {
+        styled
+          .applyChartXAxis(visibility: xAxisVisibility, labelColor: color, gridStyle: xAxisGridStyle)
+          .applyChartYAxis(visibility: yAxisVisibility, labelColor: color, gridStyle: yAxisGridStyle)
+          .applyChartLegend(visibility: legendVisibility, labelColor: color, items: legendItems)
+          .applyYAxisLeadingInset(visibility: yAxisVisibility)
+          .foregroundStyle(color)
+          .foregroundColor(color)
+          .tint(color)
+      } else {
+        styled
+          .applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
+          .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
+          .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
+          .applyYAxisLeadingInset(visibility: yAxisVisibility)
+      }
+    } else {
+      applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
+        .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
+        .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
+        .applyYAxisLeadingInset(visibility: yAxisVisibility)
+    }
+  }
+
+  @ViewBuilder
+  func applyYAxisLeadingInset(visibility: Visibility) -> some View {
+    if visibility == .hidden {
+      self
+    } else {
+      padding(.leading, 10)
+    }
+  }
+
+  @ViewBuilder
+  func applyChartLegend(visibility: Visibility, labelColor: Color?, items: [ChartLegendItem]) -> some View {
+    if visibility == .hidden {
+      chartLegend(.hidden)
+    } else {
+      chartLegend(position: .automatic, alignment: .center, spacing: 8) {
+        HStack(spacing: 12) {
+          ForEach(items) { item in
+            HStack(spacing: 6) {
+              Circle()
+                .fill(item.swatch)
+                .frame(width: 8, height: 8)
+              Text(item.label)
+                .foregroundStyle(labelColor ?? .primary)
+            }
+          }
+        }
+      }
+      .chartLegend(visibility)
+    }
+  }
+
+  func axisGridStrokeStyle(_ gridStyle: AxisGridStyle?) -> StrokeStyle? {
+    guard let gridStyle else { return nil }
+    guard gridStyle.lineWidth != nil || (gridStyle.dash?.isEmpty == false) else { return nil }
+    return StrokeStyle(lineWidth: gridStyle.lineWidth ?? 1, dash: gridStyle.dash ?? [])
+  }
+
+  @ViewBuilder
+  func applyChartXAxis(visibility: Visibility, labelColor: Color?, gridStyle: AxisGridStyle?) -> some View {
+    if visibility == .hidden {
+      chartXAxis(.hidden)
+    } else if gridStyle == nil, labelColor == nil {
+      chartXAxis(visibility)
+    } else {
+      chartXAxis {
+        AxisMarks {
+          if gridStyle?.visible != false {
+            if let stroke = axisGridStrokeStyle(gridStyle) {
+              if let color = gridStyle?.color {
+                AxisGridLine(stroke: stroke).foregroundStyle(color)
+              } else {
+                AxisGridLine(stroke: stroke)
+              }
+            } else if let color = gridStyle?.color {
+              AxisGridLine().foregroundStyle(color)
+            } else {
+              AxisGridLine()
+            }
+          }
+          AxisTick()
+          if let labelColor {
+            AxisValueLabel()
+              .foregroundStyle(labelColor)
+          } else {
+            AxisValueLabel()
+          }
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  func applyChartYAxis(visibility: Visibility, labelColor: Color?, gridStyle: AxisGridStyle?) -> some View {
+    if visibility == .hidden {
+      chartYAxis(.hidden)
+    } else if visibility != .visible, gridStyle == nil, labelColor == nil {
+      chartYAxis(visibility)
+    } else {
+      chartYAxis {
+        AxisMarks(position: .leading) {
+          if gridStyle?.visible != false {
+            if let stroke = axisGridStrokeStyle(gridStyle) {
+              if let color = gridStyle?.color {
+                AxisGridLine(stroke: stroke).foregroundStyle(color)
+              } else {
+                AxisGridLine(stroke: stroke)
+              }
+            } else if let color = gridStyle?.color {
+              AxisGridLine().foregroundStyle(color)
+            } else {
+              AxisGridLine()
+            }
+          }
+          AxisTick()
+          if let labelColor {
+            AxisValueLabel()
+              .foregroundStyle(labelColor)
+          } else {
+            AxisValueLabel()
+          }
+        }
+      }
+    }
+  }
+
   @ViewBuilder
   func applyForegroundStyleScale(_ raw: String?) -> some View {
     if let raw,
@@ -584,19 +800,6 @@ private extension View {
         chartForegroundStyleScale(domain: domain, range: range)
       } else {
         self
-      }
-    } else {
-      self
-    }
-  }
-
-  @ViewBuilder
-  func applyScrollableAxes(_ raw: String?) -> some View {
-    if #available(iOS 17.0, macOS 14.0, *) {
-      switch raw {
-      case "horizontal": chartScrollableAxes(.horizontal)
-      case "vertical": chartScrollableAxes(.vertical)
-      default: self
       }
     } else {
       self

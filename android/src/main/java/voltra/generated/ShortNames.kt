@@ -31,7 +31,6 @@ object ShortNames {
             "bw" to "borderWidth",
             "b" to "bottom",
             "bs" to "buttonStyle",
-            "csa" to "chartScrollableAxes",
             "chk" to "checked",
             "clip" to "clipped",
             "c" to "color",
@@ -167,7 +166,9 @@ object ShortNames {
             "valig" to "verticalAlignment",
             "wt" to "weight",
             "w" to "width",
+            "xgs" to "xAxisGridStyle",
             "xav" to "xAxisVisibility",
+            "ygs" to "yAxisGridStyle",
             "yav" to "yAxisVisibility",
             "zi" to "zIndex",
         )

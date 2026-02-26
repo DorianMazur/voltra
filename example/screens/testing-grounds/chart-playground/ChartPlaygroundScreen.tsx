@@ -1,5 +1,5 @@
 import { Link } from 'expo-router'
-import React, { useState, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Voltra } from 'voltra'
 import { VoltraView } from 'voltra/client'
@@ -37,6 +37,9 @@ const randomSectorData = () => {
 }
 
 const randomRuleY = () => randomValue(30, 80)
+const randomRuleX = () => MONTHS[randomValue(0, MONTHS.length - 1)] ?? MONTHS[0]
+const randomPointRuleY = () => randomValue(0, 100)
+const randomPointRuleX = () => randomValue(0, 100)
 
 // ─── chart preview wrapper ───────────────────────────────────────────────────
 
@@ -52,8 +55,11 @@ export default function ChartPlaygroundScreen() {
   const [lineData, setLineData] = useState(randomLineData)
   const [areaData, setAreaData] = useState(randomAreaData)
   const [pointData, setPointData] = useState(randomPointData)
+  const [pointRuleY, setPointRuleY] = useState(randomPointRuleY)
+  const [pointRuleX, setPointRuleX] = useState(randomPointRuleX)
   const [sectorData, setSectorData] = useState(randomSectorData)
   const [ruleY, setRuleY] = useState(randomRuleY)
+  const [ruleX, setRuleX] = useState(randomRuleX)
   const [comboBarData, setComboBarData] = useState(randomBarData)
   const [comboLineData, setComboLineData] = useState(randomLineData)
 
@@ -63,8 +69,11 @@ export default function ChartPlaygroundScreen() {
     setLineData(randomLineData())
     setAreaData(randomAreaData())
     setPointData(randomPointData())
+    setPointRuleY(randomPointRuleY())
+    setPointRuleX(randomPointRuleX())
     setSectorData(randomSectorData())
     setRuleY(randomRuleY())
+    setRuleX(randomRuleX())
     setComboBarData(randomBarData())
     setComboLineData(randomLineData())
   }, [])
@@ -89,7 +98,11 @@ export default function ChartPlaygroundScreen() {
             <Button title="Randomize" onPress={() => setBarData(randomBarData())} variant="secondary" />
           </View>
           <ChartPreview>
-            <Voltra.Chart style={{ width: '100%', height: '100%' }}>
+            <Voltra.Chart
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
+              xAxisVisibility="visible"
+              yAxisVisibility="visible"
+            >
               <Voltra.BarMark data={barData} color="#4285f4" cornerRadius={4} />
             </Voltra.Chart>
           </ChartPreview>
@@ -98,16 +111,20 @@ export default function ChartPlaygroundScreen() {
         {/* BarMark multi-series */}
         <Card>
           <Card.Title>BarMark — Multi-series</Card.Title>
-          <Card.Text>Two series (A & B) rendered with automatic color mapping.</Card.Text>
+          <Card.Text>
+            Two series (A & B) rendered as grouped bars using the supported `stacking` grouped mode.
+          </Card.Text>
           <View style={styles.refreshRow}>
             <Button title="Randomize" onPress={() => setMultiData(randomMultiSeriesData())} variant="secondary" />
           </View>
           <ChartPreview>
             <Voltra.Chart
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', color: '#FFFFFF' }}
+              yAxisVisibility="visible"
+              xAxisVisibility="visible"
               foregroundStyleScale={{ A: '#4285f4', B: '#ea4335' }}
             >
-              <Voltra.BarMark data={multiData} cornerRadius={4} />
+              <Voltra.BarMark data={multiData} stacking="grouped" cornerRadius={4} />
             </Voltra.Chart>
           </ChartPreview>
         </Card>
@@ -143,13 +160,28 @@ export default function ChartPlaygroundScreen() {
         {/* PointMark */}
         <Card>
           <Card.Title>PointMark</Card.Title>
-          <Card.Text>Scatter plot with numeric x and y axes.</Card.Text>
+          <Card.Text>
+            Scatter plot with numeric x and y axes plus both vertical and horizontal reference lines.
+          </Card.Text>
           <View style={styles.refreshRow}>
-            <Button title="Randomize" onPress={() => setPointData(randomPointData())} variant="secondary" />
+            <Button
+              title="Randomize"
+              onPress={() => {
+                setPointData(randomPointData())
+                setPointRuleY(randomPointRuleY())
+                setPointRuleX(randomPointRuleX())
+              }}
+              variant="secondary"
+            />
           </View>
           <ChartPreview>
-            <Voltra.Chart style={{ width: '100%', height: '100%' }}>
+            <Voltra.Chart
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
+              xAxisVisibility="visible"
+              yAxisVisibility="visible"
+            >
               <Voltra.PointMark data={pointData} color="#fbbc04" symbolSize={60} />
+              <Voltra.RuleMark xValue={pointRuleX} yValue={pointRuleY} color="#ea4335" lineWidth={2} />
             </Voltra.Chart>
           </ChartPreview>
         </Card>
@@ -157,21 +189,29 @@ export default function ChartPlaygroundScreen() {
         {/* RuleMark */}
         <Card>
           <Card.Title>RuleMark</Card.Title>
-          <Card.Text>Bar chart with a horizontal reference line showing the average.</Card.Text>
+          <Card.Text>
+            Bar chart with both horizontal and vertical reference lines. When both `xValue` and `yValue` are set, both
+            lines render.
+          </Card.Text>
           <View style={styles.refreshRow}>
             <Button
               title="Randomize"
               onPress={() => {
                 setBarData(randomBarData())
                 setRuleY(randomRuleY())
+                setRuleX(randomRuleX())
               }}
               variant="secondary"
             />
           </View>
           <ChartPreview>
-            <Voltra.Chart style={{ width: '100%', height: '100%' }}>
+            <Voltra.Chart
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
+              xAxisVisibility="visible"
+              yAxisVisibility="visible"
+            >
               <Voltra.BarMark data={barData} color="#4285f4" cornerRadius={4} />
-              <Voltra.RuleMark yValue={ruleY} color="#ea4335" lineWidth={2} />
+              <Voltra.RuleMark xValue={ruleX} yValue={ruleY} color="#ea4335" lineWidth={2} />
             </Voltra.Chart>
           </ChartPreview>
         </Card>
@@ -198,7 +238,12 @@ export default function ChartPlaygroundScreen() {
             <Button title="Randomize" onPress={() => setSectorData(randomSectorData())} variant="secondary" />
           </View>
           <ChartPreview>
-            <Voltra.Chart style={{ width: '100%', height: '100%' }}>
+            <Voltra.Chart
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
+              xAxisVisibility="visible"
+              yAxisVisibility="visible"
+              legendVisibility="hidden"
+            >
               <Voltra.SectorMark data={sectorData} innerRadius={0.5} angularInset={2} />
             </Voltra.Chart>
           </ChartPreview>
@@ -219,7 +264,11 @@ export default function ChartPlaygroundScreen() {
             />
           </View>
           <ChartPreview>
-            <Voltra.Chart style={{ width: '100%', height: '100%' }}>
+            <Voltra.Chart
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
+              xAxisVisibility="visible"
+              yAxisVisibility="visible"
+            >
               <Voltra.BarMark data={comboBarData} color="#4285f4" cornerRadius={4} />
               <Voltra.LineMark data={comboLineData} color="#ea4335" lineWidth={2} interpolation="monotone" />
             </Voltra.Chart>
@@ -232,7 +281,7 @@ export default function ChartPlaygroundScreen() {
           <Card.Text>Chart with both axes hidden — clean minimal look.</Card.Text>
           <ChartPreview>
             <Voltra.Chart
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', color: '#FFFFFF', backgroundColor: '#0F172A' }}
               xAxisVisibility="hidden"
               yAxisVisibility="hidden"
               legendVisibility="hidden"
@@ -267,6 +316,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
+    backgroundColor: '#0F172A',
     marginBottom: 8,
   },
   subheading: {
