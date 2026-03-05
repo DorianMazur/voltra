@@ -132,7 +132,6 @@ class VoltraRN(
                                     remoteViews.reapply(context, existingView)
                                     applied = true
                                 } catch (e: Exception) {
-                                    // reapply failed (layout structure changed), fall through to full inflate
                                 }
                             }
 
