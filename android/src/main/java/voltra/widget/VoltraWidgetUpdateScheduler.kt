@@ -82,6 +82,7 @@ object VoltraWidgetUpdateScheduler {
             )
                 .setInputData(inputData)
                 .setConstraints(constraints)
+                .addTag(VoltraWidgetUpdateWorker.TAG)
                 .build()
 
         WorkManager.getInstance(context)
@@ -125,6 +126,7 @@ object VoltraWidgetUpdateScheduler {
             OneTimeWorkRequestBuilder<VoltraWidgetUpdateWorker>()
                 .setInputData(inputData)
                 .setConstraints(constraints)
+                .addTag(VoltraWidgetUpdateWorker.TAG)
                 .build()
 
         WorkManager.getInstance(context).enqueue(workRequest)
