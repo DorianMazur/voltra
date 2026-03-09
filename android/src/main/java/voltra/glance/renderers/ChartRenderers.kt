@@ -66,9 +66,11 @@ fun RenderChart(
 
     val widthIsFill = styleWidth is SizeValue.Fill
     val heightIsFill = styleHeight is SizeValue.Fill
+    val hasSectors = marks.any { it.type == "sector" }
+    val defaultWidth = if (hasSectors && heightIsFill && widthIsFill) DEFAULT_CHART_HEIGHT_DP else DEFAULT_CHART_WIDTH_DP
     val chartWidthDp = when (styleWidth) {
         is SizeValue.Fixed -> styleWidth.value.value.toInt()
-        else -> DEFAULT_CHART_WIDTH_DP
+        else -> defaultWidth
     }
     val chartHeightDp = when (styleHeight) {
         is SizeValue.Fixed -> styleHeight.value.value.toInt()
@@ -109,7 +111,7 @@ fun RenderChart(
     Image(
         provider = ImageProvider(icon),
         contentDescription = "Chart",
-        contentScale = ContentScale.Fit,
+        contentScale = if (hasSectors) ContentScale.Fit else ContentScale.FillBounds,
         modifier = sizeModifier,
     )
 }
