@@ -41,6 +41,13 @@ const ANDROID_SECTIONS = [
       'Preview chart widgets rendered via Canvas bitmap. Supports bar, line, area, point, rule, and pie/donut charts.',
     route: '/android-widgets/charts',
   },
+  {
+    id: 'server-driven-widgets',
+    title: 'Server-Driven Widgets',
+    description:
+      'Serve dynamic widget content from a remote server using Voltra SSR. This example includes a sample widget server implementation.',
+    route: '/android-widgets/server-driven',
+  },
   // Add more Android-specific sections here as they are implemented
 ]
 

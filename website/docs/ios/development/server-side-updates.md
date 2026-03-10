@@ -143,14 +143,33 @@ Replace `<your.app.bundle.id>` with your app's bundle identifier (e.g., `com.exa
 }
 ```
 
+**For ending an existing Live Activity:**
+
+```json
+{
+  "aps": {
+    "timestamp": 1683012400,
+    "event": "end",
+    "content-state": {
+      "uiJsonData": "{\"lockScreen\":{\"type\":\"VStack\",\"children\":{\"type\":\"Text\",\"children\":\"Hello\",\"props\":{}},\"props\":{}}}"
+    },
+    "dismissal-date": 1683016000
+  }
+}
+```
+
 **Key fields:**
 
-- `aps.event`: Set to `"update"` for updating an existing Live Activity, or `"start"` for push-to-start (iOS 17.2+)
-- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value eg. `ixOAeyJ2IjoxLCJscyI6eyJ0IjowLCJjIjoiSGVsbG8sIHdvcmxkISJ9fQM=`
+- `aps.event`: Set to `"update"` to update, `"end"` to end, or `"start"` for push-to-start (iOS 17.2+)
+- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value eg. `ixOAeyJ2IjoxLCJscyI6eyJ0IjowLCJjIjoiSGVsbG8sIHdvcmxkISJ9fQM=`. This must be sent for `update` and `end` events.
 - `aps.timestamp`: Unix timestamp in seconds (required for Live Activities)
 - `aps.attributes-type`: For push-to-start, must be `"VoltraAttributes"`
 - `aps.attributes.name`: For push-to-start, a user-defined name for the activity (can be any string you choose)
 - `aps.alert`: Required field for push-to-start
+
+For `event: "end"`, include `aps.dismissal-date`.
+To remove the Live Activity from the Lock Screen right after it ends, set `dismissal-date` to a timestamp in the past (for example, 1663177260).
+You can also set a timestamp up to four hours in the future to control when it’s dismissed.
 
 :::danger
 ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep your UI JSON minimal to stay within this limit. Avoid deeply nested component trees and excessive styling to ensure your payloads fit within the constraint.
@@ -209,6 +228,53 @@ useEffect(() => {
 ```
 
 Use only Voltra-provided tokens, which are specialized for Live Activity push notifications and different from regular device tokens. Update tokens are tied to specific Live Activities, while push-to-start tokens are for starting new activities. Update tokens are provided when Live Activities are started and may change during the activity's lifecycle. When sending notifications via APNS, use these push tokens as the target device token to route notifications to the correct Live Activity or device.
+
+## Broadcast push notifications (iOS 18+)
+
+Starting with iOS 18 and iPadOS 18, you can use **broadcast push notifications** to update many Live Activities with a single push notification. Instead of sending individual notifications to each device token, you send one broadcast to a shared channel—all Live Activities subscribed to that channel receive the update. This is ideal for scenarios like live sports scores or flight status where many users follow the same event.
+
+### Prerequisites
+
+1. **Enable Broadcast Capability:** In your [Apple Developer account](https://developer.apple.com/account), go to Certificates, Identifiers & Profiles > Identifiers, select your App ID, and enable **Broadcast Capability** under Push Notifications.
+
+2. **Create a channel:** Your server creates a channel via APNs and receives a channel ID. You can maintain up to 10,000 channels per app. Use [Apple Push Notification Console](https://icloud.developer.apple.com/dashboard/notifications/) or the [channel management API](https://developer.apple.com/documentation/usernotifications/sending-channel-management-requests-to-apns) to create channels.
+
+3. **Plugin configuration:** Keep `enablePushNotifications: true` in your Voltra plugin config—the `aps-environment` entitlement is still required for broadcast push.
+
+### Starting a Live Activity with a channel
+
+Pass the `channelId` option when starting a Live Activity to subscribe it to a broadcast channel:
+
+```typescript
+import { startLiveActivity } from 'voltra/client'
+import { Voltra } from 'voltra'
+
+const activityId = await startLiveActivity(variants, {
+  activityName: 'match-123',
+  channelId: 'CTrNsYq/Ee8AALLzHQaVlA==', // Channel ID from your server
+})
+```
+
+When `channelId` is provided, the Live Activity subscribes to broadcast updates on iOS 18+. On iOS versions before 18, broadcast is unavailable and Voltra falls back to token-based Live Activity push updates.
+
+### Sending broadcast updates
+
+To update all Live Activities on a channel, send a POST request to APNs with:
+
+- **Path:** `/4/broadcasts/apps/<your.bundle.id>` (bundle ID without the `.push-type.liveactivity` suffix)
+- **Header:** `apns-channel-id: <Channel ID>`
+- **Payload:** Same structure as individual updates—`event: "update"`, `content-state`, `timestamp`, etc.
+
+For the full broadcast payload format and headers, see [Apple's broadcast push documentation](https://developer.apple.com/documentation/usernotifications/sending-broadcast-push-notification-requests-to-apns).
+
+### Broadcast vs. individual tokens
+
+| Aspect | Individual tokens | Broadcast |
+|--------|-------------------|-----------|
+| Server sends | One notification per device | One notification per channel |
+| `activityTokenReceived` event | Fires for each activity | Does not fire |
+| Best for | Per-user content (orders, rides) | Shared content (scores, flights) |
+| iOS version | 16.2+ | 18+ |
 
 ## Handling background execution
 

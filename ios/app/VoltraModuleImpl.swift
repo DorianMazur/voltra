@@ -63,6 +63,8 @@ public class VoltraModuleImpl {
       }()
       let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
+      let pushType = try resolvePushType(channelId: options?.channelId)
+
       // Create request struct with compressed JSON
       let createRequest = CreateActivityRequest(
         activityId: activityName,
@@ -70,7 +72,7 @@ public class VoltraModuleImpl {
         jsonString: compressedJson,
         staleDate: staleDate,
         relevanceScore: relevanceScore,
-        pushType: pushNotificationsEnabled ? .token : nil,
+        pushType: pushType,
         endExistingWithSameName: true
       )
 
@@ -274,6 +276,26 @@ public class VoltraModuleImpl {
     }
   }
 
+  func setWidgetServerCredentials(token: String, headers: [String: String]?) {
+    VoltraKeychainHelper.saveToken(token)
+    if let headers = headers {
+      VoltraKeychainHelper.saveHeaders(headers)
+    } else {
+      VoltraKeychainHelper.deleteHeaders()
+    }
+    print("[Voltra] Widget server credentials saved to Keychain")
+
+    // Reload all widgets so they can pick up the new credentials immediately
+    WidgetCenter.shared.reloadAllTimelines()
+  }
+
+  func clearWidgetServerCredentials() {
+    VoltraKeychainHelper.clearAll()
+    print("[Voltra] Widget server credentials cleared from Keychain")
+
+    WidgetCenter.shared.reloadAllTimelines()
+  }
+
   // MARK: - Private Helpers
 
   private func mapWidgetFamily(_ family: WidgetFamily) -> String {
@@ -290,6 +312,10 @@ public class VoltraModuleImpl {
   }
 
   private func mapError(_ error: Error) -> Error {
+    if let moduleError = error as? VoltraModule.VoltraErrors {
+      return moduleError
+    }
+
     if let serviceError = error as? VoltraLiveActivityError {
       switch serviceError {
       case .unsupportedOS:
@@ -301,6 +327,40 @@ public class VoltraModuleImpl {
       }
     }
     return VoltraModule.VoltraErrors.unexpectedError(error)
+  }
+
+  private func resolvePushType(channelId rawChannelId: String?) throws -> PushType? {
+    guard let rawChannelId else {
+      return pushNotificationsEnabled ? .token : nil
+    }
+
+    let channelId = rawChannelId.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !channelId.isEmpty else {
+      throw VoltraModule.VoltraErrors.unexpectedError(
+        NSError(
+          domain: "VoltraModule",
+          code: -20,
+          userInfo: [NSLocalizedDescriptionKey: "channelId must be a non-empty string."]
+        )
+      )
+    }
+
+    guard pushNotificationsEnabled else {
+      throw VoltraModule.VoltraErrors.unexpectedError(
+        NSError(
+          domain: "VoltraModule",
+          code: -21,
+          userInfo: [NSLocalizedDescriptionKey: "channelId requires enablePushNotifications: true in the Voltra plugin config."]
+        )
+      )
+    }
+
+    if #available(iOS 18.0, *) {
+      return .channel(channelId)
+    }
+
+    // On iOS <18, broadcast channels are unavailable, so fall back to token-based updates.
+    return .token
   }
 
   private func validatePayloadSize(_ compressedPayload: String, operation: String) throws {

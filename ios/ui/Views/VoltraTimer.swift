@@ -47,7 +47,8 @@ public struct VoltraTimer: VoltraView {
 
   private func textTemplates(params: TimerParameters) -> TextTemplates? {
     guard let raw = params.textTemplates,
-          let data = raw.data(using: .utf8) else { return nil }
+          let data = raw.data(using: .utf8)
+    else { return nil }
     return try? JSONDecoder().decode(TextTemplates.self, from: data)
   }
 
@@ -89,7 +90,7 @@ public struct VoltraTimer: VoltraView {
 
     if style == "relative" {
       let targetDate = isCountDown ? range.upperBound : range.lowerBound
-      Text(targetDate, style: .relative)
+      Text(targetDate, style: .relative).monospacedDigit()
     } else {
       // Live Activities require Text(timerInterval:...) for automatic updates
       Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
@@ -100,7 +101,7 @@ public struct VoltraTimer: VoltraView {
   @ViewBuilder
   private func staticZeroText(style: String, showHours: Bool) -> some View {
     if style == "relative" {
-      Text("0s")
+      Text("0s").monospacedDigit()
     } else {
       Text(showHours ? "0:00:00" : "0:00")
         .monospacedDigit()
@@ -108,7 +109,9 @@ public struct VoltraTimer: VoltraView {
   }
 
   @ViewBuilder
-  private func renderTemplate<T: View>(template: String, @ViewBuilder timeView: @escaping () -> T) -> some View {
+  private func renderTemplate<T: View>(template: String, @ViewBuilder timeView: @escaping () -> T)
+    -> some View
+  {
     let placeholder = "{time}"
     let segments = template.components(separatedBy: placeholder)
 
