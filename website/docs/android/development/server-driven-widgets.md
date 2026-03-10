@@ -2,6 +2,8 @@
 
 Server-driven widgets allow your Android Home Screen widgets to periodically fetch fresh content from a remote server—without the user opening the app. This is powered by WorkManager, which handles scheduling, retries, and network constraints automatically.
 
+Before you start, make sure the widget is registered in the Voltra plugin config and plan to rebuild the native app after adding or changing server-driven widget settings.
+
 ## How it works
 
 1. You configure a `serverUpdate` URL in your Android widget's plugin config
@@ -47,7 +49,9 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 **`serverUpdate` options:**
 
 - `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId` and `platform=android` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android`).
-- `intervalMinutes`: How often the widget fetches updates. Defaults to `60`. The minimum effective interval is 15 minutes (WorkManager requirement).
+- `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. The minimum effective interval is 15 minutes (WorkManager requirement).
+
+After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native widget code picks up the new server update settings.
 
 :::note
 On the Android emulator, use `10.0.2.2` instead of `localhost` to reach the host machine. Real devices need the host's LAN IP address.
@@ -55,13 +59,7 @@ On the Android emulator, use `10.0.2.2` instead of `localhost` to reach the host
 
 ## Building the server
 
-Voltra provides three widget server handlers from `voltra/server`:
-
-- `createWidgetUpdateHandler()` for Fetch-compatible runtimes like Bun, Deno, Hono, and Expo API routes
-- `createWidgetUpdateNodeHandler()` for `node:http`
-- `createWidgetUpdateExpressHandler()` for Express-style request/response handlers
-
-All three share the same widget request parsing, platform validation, token validation, and response serialization.
+Voltra provides widget server handlers for the common runtime styles. Use `createWidgetUpdateHandler()` for Fetch-compatible runtimes, `createWidgetUpdateNodeHandler()` for `node:http`, and `createWidgetUpdateExpressHandler()` for Express-style handlers. All three share the same request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
@@ -146,7 +144,7 @@ await setWidgetServerCredentials({
 })
 ```
 
-The `token` is sent as `Authorization: Bearer <token>` on every server request. Any additional `headers` are also included.
+The `token` is required and is sent as `Authorization: Bearer <token>` on every server request. Any additional `headers` are also included. If your widget endpoint does not require authentication, skip `setWidgetServerCredentials()` entirely.
 
 ### Clearing credentials
 

@@ -2,6 +2,8 @@
 
 Server-driven widgets allow your Home Screen widgets to periodically fetch fresh content from a remote server—without the user opening the app. This is ideal for widgets that display dynamic data like weather, news, stock prices, or live scores.
 
+Before you start, make sure the widget is registered in the Voltra plugin config and plan to rebuild the native app after adding or changing server-driven widget settings.
+
 ## How it works
 
 1. You configure a `serverUpdate` URL in your widget's plugin config
@@ -46,15 +48,11 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
 - `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform=ios`, and `family` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=ios&family=systemSmall`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. iOS WidgetKit may throttle requests; the minimum effective interval is ~15 minutes.
 
+After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native files and widget extension pick up the new server update settings.
+
 ## Building the server
 
-Voltra provides three widget server handlers from `voltra/server`:
-
-- `createWidgetUpdateHandler()` for Fetch-compatible runtimes like Bun, Deno, Hono, and Expo API routes
-- `createWidgetUpdateNodeHandler()` for `node:http`
-- `createWidgetUpdateExpressHandler()` for Express-style request/response handlers
-
-All three share the same widget request parsing, platform validation, token validation, and response serialization.
+Voltra provides widget server handlers for the common runtime styles. Use `createWidgetUpdateHandler()` for Fetch-compatible runtimes, `createWidgetUpdateNodeHandler()` for `node:http`, and `createWidgetUpdateExpressHandler()` for Express-style handlers. All three share the same request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
@@ -143,7 +141,7 @@ await setWidgetServerCredentials({
 })
 ```
 
-The `token` is sent as `Authorization: Bearer <token>` on every server request. Any additional `headers` are also included.
+The `token` is required and is sent as `Authorization: Bearer <token>` on every server request. Any additional `headers` are also included. If your widget endpoint does not require authentication, skip `setWidgetServerCredentials()` entirely.
 
 ### Clearing credentials
 
