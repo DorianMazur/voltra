@@ -37,8 +37,8 @@ object ComponentTypeID {
     /**
      * Get component name from numeric ID
      */
-    fun getComponentName(id: Int): String? {
-        return when (id) {
+    fun getComponentName(id: Int): String? =
+        when (id) {
             0 -> "AndroidFilledButton"
             1 -> "AndroidImage"
             2 -> "AndroidSwitch"
@@ -59,8 +59,7 @@ object ComponentTypeID {
             17 -> "AndroidSquareIconButton"
             18 -> "AndroidText"
             19 -> "AndroidTitleBar"
-            20 -> "Chart"
+            20 -> "AndroidChart"
             else -> null
         }
-    }
 }

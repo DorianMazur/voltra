@@ -7,23 +7,24 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.util.Log
-import voltra.styling.JSColorParser
 import androidx.compose.ui.graphics.toArgb
+import voltra.styling.JSColorParser
 
 private const val TAG = "ChartBitmapRenderer"
 
-private val DEFAULT_PALETTE = intArrayOf(
-    0xFF4E79A7.toInt(), // blue
-    0xFFF28E2B.toInt(), // orange
-    0xFFE15759.toInt(), // red
-    0xFF76B7B2.toInt(), // teal
-    0xFF59A14F.toInt(), // green
-    0xFFEDC948.toInt(), // yellow
-    0xFFB07AA1.toInt(), // purple
-    0xFFFF9DA7.toInt(), // pink
-    0xFF9C755F.toInt(), // brown
-    0xFFBAB0AC.toInt(), // grey
-)
+private val DEFAULT_PALETTE =
+    intArrayOf(
+        0xFF4E79A7.toInt(), // blue
+        0xFFF28E2B.toInt(), // orange
+        0xFFE15759.toInt(), // red
+        0xFF76B7B2.toInt(), // teal
+        0xFF59A14F.toInt(), // green
+        0xFFEDC948.toInt(), // yellow
+        0xFFB07AA1.toInt(), // purple
+        0xFFFF9DA7.toInt(), // pink
+        0xFF9C755F.toInt(), // brown
+        0xFFBAB0AC.toInt(), // grey
+    )
 
 data class WireMark(
     val type: String,
@@ -51,8 +52,10 @@ fun parseMarksJson(marksJson: String): List<WireMark> {
         outer.mapNotNull { row ->
             if (row.size < 3) return@mapNotNull null
             val markType = row[0] as? String ?: return@mapNotNull null
+
             @Suppress("UNCHECKED_CAST")
             val data = row[1] as? List<List<Any>>
+
             @Suppress("UNCHECKED_CAST")
             val props = (row[2] as? Map<String, Any>) ?: emptyMap()
             WireMark(markType, data, props)
@@ -153,11 +156,12 @@ fun renderChartBitmap(
     if (allPoints.isEmpty() && marks.none { it.type == "rule" }) return bitmap
 
     val hasStringX = allPoints.any { it.xStr != null }
-    val categories: List<String> = if (hasStringX) {
-        allPoints.mapNotNull { it.xStr }.distinct()
-    } else {
-        emptyList()
-    }
+    val categories: List<String> =
+        if (hasStringX) {
+            allPoints.mapNotNull { it.xStr }.distinct()
+        } else {
+            emptyList()
+        }
 
     val xMin: Double
     val xMax: Double
@@ -174,36 +178,36 @@ fun renderChartBitmap(
     val yMin = (yValues.minOrNull() ?: 0.0).coerceAtMost(0.0)
     val yMax = (yValues.maxOrNull() ?: 1.0).let { if (it == yMin) it + 1.0 else it }
 
-    fun mapX(pt: ChartPoint): Float {
-        return if (hasStringX) {
+    fun mapX(pt: ChartPoint): Float =
+        if (hasStringX) {
             val idx = categories.indexOf(pt.xStr ?: "")
             chartLeft + (idx.toFloat() / (categories.size - 1).coerceAtLeast(1).toFloat()) * chartWidth
         } else {
             chartLeft + ((pt.xNum ?: 0.0).toFloat() - xMin.toFloat()) / (xMax.toFloat() - xMin.toFloat()) * chartWidth
         }
-    }
 
-    fun mapY(y: Double): Float {
-        return chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
-    }
+    fun mapY(y: Double): Float =
+        chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
 
-    val gridPaint = Paint().apply {
-        color = 0x20808080
-        style = Paint.Style.STROKE
-        strokeWidth = 1f
-        pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
-    }
+    val gridPaint =
+        Paint().apply {
+            color = 0x20808080
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+            pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
+        }
     val gridSteps = 4
     for (i in 0..gridSteps) {
         val y = chartTop + (chartHeight * i / gridSteps)
         canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
     }
 
-    val axisPaint = Paint().apply {
-        color = 0xFF888888.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 1.5f
-    }
+    val axisPaint =
+        Paint().apply {
+            color = 0xFF888888.toInt()
+            style = Paint.Style.STROKE
+            strokeWidth = 1.5f
+        }
     if (yAxisVisible) {
         canvas.drawLine(chartLeft, chartTop, chartLeft, chartBottom, axisPaint)
     }
@@ -211,18 +215,23 @@ fun renderChartBitmap(
         canvas.drawLine(chartLeft, chartBottom, chartRight, chartBottom, axisPaint)
     }
 
-    val labelPaint = Paint().apply {
-        color = 0xFF888888.toInt()
-        textSize = 10f * (width / 400f).coerceIn(0.8f, 1.5f)
-        isAntiAlias = true
-    }
+    val labelPaint =
+        Paint().apply {
+            color = 0xFF888888.toInt()
+            textSize = 10f * (width / 400f).coerceIn(0.8f, 1.5f)
+            isAntiAlias = true
+        }
 
     if (yAxisVisible) {
         for (i in 0..gridSteps) {
             val yVal = yMin + (yMax - yMin) * (gridSteps - i) / gridSteps
             val y = chartTop + (chartHeight * i / gridSteps)
-            val label = if (yVal == yVal.toLong().toDouble()) yVal.toLong().toString()
-            else String.format("%.1f", yVal)
+            val label =
+                if (yVal == yVal.toLong().toDouble()) {
+                    yVal.toLong().toString()
+                } else {
+                    String.format("%.1f", yVal)
+                }
             canvas.drawText(label, 4f, y + labelPaint.textSize / 3, labelPaint)
         }
     }
@@ -240,17 +249,81 @@ fun renderChartBitmap(
         val color = wireColor(m.props)
 
         when (m.type) {
-            "bar" -> drawBars(canvas, points, m.props, color, foregroundStyleScale,
-                hasStringX, categories, chartLeft, chartBottom, chartWidth, chartHeight,
-                xMin, xMax, yMin, yMax)
-            "line" -> drawLine(canvas, points, m.props, color, foregroundStyleScale,
-                ::mapX, ::mapY)
-            "area" -> drawArea(canvas, points, m.props, color, foregroundStyleScale,
-                ::mapX, ::mapY, chartBottom)
-            "point" -> drawPoints(canvas, points, m.props, color, foregroundStyleScale,
-                ::mapX, ::mapY)
-            "rule" -> drawRule(canvas, m.props, chartLeft, chartRight, chartTop, chartBottom,
-                chartWidth, chartHeight, xMin, xMax, yMin, yMax, hasStringX, categories)
+            "bar" -> {
+                drawBars(
+                    canvas,
+                    points,
+                    m.props,
+                    color,
+                    foregroundStyleScale,
+                    hasStringX,
+                    categories,
+                    chartLeft,
+                    chartBottom,
+                    chartWidth,
+                    chartHeight,
+                    xMin,
+                    xMax,
+                    yMin,
+                    yMax,
+                )
+            }
+
+            "line" -> {
+                drawLine(
+                    canvas,
+                    points,
+                    m.props,
+                    color,
+                    foregroundStyleScale,
+                    ::mapX,
+                    ::mapY,
+                )
+            }
+
+            "area" -> {
+                drawArea(
+                    canvas,
+                    points,
+                    m.props,
+                    color,
+                    foregroundStyleScale,
+                    ::mapX,
+                    ::mapY,
+                    chartBottom,
+                )
+            }
+
+            "point" -> {
+                drawPoints(
+                    canvas,
+                    points,
+                    m.props,
+                    color,
+                    foregroundStyleScale,
+                    ::mapX,
+                    ::mapY,
+                )
+            }
+
+            "rule" -> {
+                drawRule(
+                    canvas,
+                    m.props,
+                    chartLeft,
+                    chartRight,
+                    chartTop,
+                    chartBottom,
+                    chartWidth,
+                    chartHeight,
+                    xMin,
+                    xMax,
+                    yMin,
+                    yMax,
+                    hasStringX,
+                    categories,
+                )
+            }
         }
     }
 
@@ -287,14 +360,14 @@ private fun drawBars(
     val totalBarSlot = chartWidth / categoryCount
     val barWidth = (props["w"] as? Number)?.toFloat() ?: (totalBarSlot * barWidthRatio)
 
-    val paint = Paint().apply {
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
+    val paint =
+        Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
 
-    fun yToCanvas(y: Double): Float {
-        return chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
-    }
+    fun yToCanvas(y: Double): Float =
+        chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
 
     val zeroY = yToCanvas(0.0.coerceIn(yMin, yMax))
 
@@ -319,11 +392,12 @@ private fun drawBars(
                 canvas.drawRect(rect, paint)
             }
         } else {
-            paint.color = if (pt.series != null) {
-                seriesColors[pt.series] ?: staticColor ?: DEFAULT_PALETTE[0]
-            } else {
-                staticColor ?: DEFAULT_PALETTE[0]
-            }
+            paint.color =
+                if (pt.series != null) {
+                    seriesColors[pt.series] ?: staticColor ?: DEFAULT_PALETTE[0]
+                } else {
+                    staticColor ?: DEFAULT_PALETTE[0]
+                }
             val left = cx - barWidth / 2f
             val right = cx + barWidth / 2f
             val top = yToCanvas(pt.y)
@@ -351,24 +425,26 @@ private fun drawLine(
     val lineWidth = (props["lw"] as? Number)?.toFloat() ?: 2f
     val seriesColors = seriesColorMap(points, foregroundStyleScale)
 
-    val groups = if (seriesColors.isNotEmpty()) {
-        points.groupBy { it.series }
-    } else {
-        mapOf(null as String? to points)
-    }
+    val groups =
+        if (seriesColors.isNotEmpty()) {
+            points.groupBy { it.series }
+        } else {
+            mapOf(null as String? to points)
+        }
 
     for ((series, pts) in groups) {
         val sorted = pts.sortedBy { it.xNum ?: 0.0 }
         if (sorted.size < 2) continue
 
-        val paint = Paint().apply {
-            style = Paint.Style.STROKE
-            this.strokeWidth = lineWidth
-            isAntiAlias = true
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-            color = seriesColors[series] ?: staticColor ?: DEFAULT_PALETTE[0]
-        }
+        val paint =
+            Paint().apply {
+                style = Paint.Style.STROKE
+                this.strokeWidth = lineWidth
+                isAntiAlias = true
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+                color = seriesColors[series] ?: staticColor ?: DEFAULT_PALETTE[0]
+            }
 
         val path = Path()
         path.moveTo(mapX(sorted[0]), mapY(sorted[0].y))
@@ -393,11 +469,12 @@ private fun drawArea(
 
     val seriesColors = seriesColorMap(points, foregroundStyleScale)
 
-    val groups = if (seriesColors.isNotEmpty()) {
-        points.groupBy { it.series }
-    } else {
-        mapOf(null as String? to points)
-    }
+    val groups =
+        if (seriesColors.isNotEmpty()) {
+            points.groupBy { it.series }
+        } else {
+            mapOf(null as String? to points)
+        }
 
     for ((series, pts) in groups) {
         val sorted = pts.sortedBy { it.xNum ?: 0.0 }
@@ -405,11 +482,12 @@ private fun drawArea(
 
         val baseColor = seriesColors[series] ?: staticColor ?: DEFAULT_PALETTE[0]
 
-        val fillPaint = Paint().apply {
-            style = Paint.Style.FILL
-            isAntiAlias = true
-            color = (baseColor and 0x00FFFFFF) or 0x40000000
-        }
+        val fillPaint =
+            Paint().apply {
+                style = Paint.Style.FILL
+                isAntiAlias = true
+                color = (baseColor and 0x00FFFFFF) or 0x40000000
+            }
 
         val fillPath = Path()
         fillPath.moveTo(mapX(sorted[0]), baseline)
@@ -420,12 +498,13 @@ private fun drawArea(
         fillPath.close()
         canvas.drawPath(fillPath, fillPaint)
 
-        val strokePaint = Paint().apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 2f
-            isAntiAlias = true
-            color = baseColor
-        }
+        val strokePaint =
+            Paint().apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+                isAntiAlias = true
+                color = baseColor
+            }
         val strokePath = Path()
         strokePath.moveTo(mapX(sorted[0]), mapY(sorted[0].y))
         for (i in 1 until sorted.size) {
@@ -450,10 +529,11 @@ private fun drawPoints(
     val radius = kotlin.math.sqrt(symbolSize) * 1.2f
     val seriesColors = seriesColorMap(points, foregroundStyleScale)
 
-    val paint = Paint().apply {
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
+    val paint =
+        Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
 
     for (pt in points) {
         paint.color = seriesColors[pt.series] ?: staticColor ?: DEFAULT_PALETTE[0]
@@ -480,12 +560,13 @@ private fun drawRule(
     val lineWidth = (props["lw"] as? Number)?.toFloat() ?: 1.5f
     val color = wireColor(props) ?: 0xFF888888.toInt()
 
-    val paint = Paint().apply {
-        style = Paint.Style.STROKE
-        strokeWidth = lineWidth
-        this.color = color
-        isAntiAlias = true
-    }
+    val paint =
+        Paint().apply {
+            style = Paint.Style.STROKE
+            strokeWidth = lineWidth
+            this.color = color
+            isAntiAlias = true
+        }
 
     val yv = (props["yv"] as? Number)?.toDouble()
     val xvStr = props["xv"] as? String
@@ -529,14 +610,22 @@ private fun drawSector(
     val maxRadius = minOf(cx, cy) - 8f
 
     val outerR = if (outerRaw > 1f) (outerRaw * dpScale).coerceAtMost(maxRadius) else maxRadius * outerRaw
-    val innerR = if (innerRaw > 1f) (innerRaw * dpScale).coerceAtMost(outerR - 1f).coerceAtLeast(0f) else maxRadius * innerRaw
+    val innerR =
+        if (innerRaw >
+            1f
+        ) {
+            (innerRaw * dpScale).coerceAtMost(outerR - 1f).coerceAtLeast(0f)
+        } else {
+            maxRadius * innerRaw
+        }
 
     val outerRect = RectF(cx - outerR, cy - outerR, cx + outerR, cy + outerR)
 
-    val paint = Paint().apply {
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
+    val paint =
+        Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
 
     var startAngle = -90f
     for ((i, sector) in sectors.withIndex()) {

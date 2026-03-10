@@ -95,7 +95,7 @@ const ENCODERS: Record<string, (props: any) => MarkWire> = {
 
 // ---- component ----
 
-export const Chart = createVoltraComponent<AndroidChartProps>('Chart', {
+export const Chart = createVoltraComponent<AndroidChartProps>('AndroidChart', {
   toJSON: ({ children, foregroundStyleScale, ...rest }) => {
     const marks: MarkWire[] = []
 

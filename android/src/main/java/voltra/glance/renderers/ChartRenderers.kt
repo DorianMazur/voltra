@@ -3,8 +3,8 @@ package voltra.glance.renderers
 import android.graphics.drawable.Icon
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
@@ -67,44 +67,57 @@ fun RenderChart(
     val widthIsFill = styleWidth is SizeValue.Fill
     val heightIsFill = styleHeight is SizeValue.Fill
     val hasSectors = marks.any { it.type == "sector" }
-    val defaultWidth = if (hasSectors && heightIsFill && widthIsFill) DEFAULT_CHART_HEIGHT_DP else DEFAULT_CHART_WIDTH_DP
-    val chartWidthDp = when (styleWidth) {
-        is SizeValue.Fixed -> styleWidth.value.value.toInt()
-        else -> defaultWidth
-    }
-    val chartHeightDp = when (styleHeight) {
-        is SizeValue.Fixed -> styleHeight.value.value.toInt()
-        else -> DEFAULT_CHART_HEIGHT_DP
-    }
+    val defaultWidth =
+        if (hasSectors && heightIsFill &&
+            widthIsFill
+        ) {
+            DEFAULT_CHART_HEIGHT_DP
+        } else {
+            DEFAULT_CHART_WIDTH_DP
+        }
+    val chartWidthDp =
+        when (styleWidth) {
+            is SizeValue.Fixed -> styleWidth.value.value.toInt()
+            else -> defaultWidth
+        }
+    val chartHeightDp =
+        when (styleHeight) {
+            is SizeValue.Fixed -> styleHeight.value.value.toInt()
+            else -> DEFAULT_CHART_HEIGHT_DP
+        }
 
-    val scale = (MAX_BITMAP_PIXELS.toFloat() / maxOf(chartWidthDp, chartHeightDp).coerceAtLeast(1))
-        .coerceAtMost(1.5f)
+    val scale =
+        (MAX_BITMAP_PIXELS.toFloat() / maxOf(chartWidthDp, chartHeightDp).coerceAtLeast(1))
+            .coerceAtMost(1.5f)
     val bitmapWidth = (chartWidthDp * scale).toInt().coerceAtLeast(1)
     val bitmapHeight = (chartHeightDp * scale).toInt().coerceAtLeast(1)
 
-    val bitmap = renderChartBitmap(
-        marks = marks,
-        width = bitmapWidth,
-        height = bitmapHeight,
-        foregroundStyleScale = foregroundStyleScale,
-        xAxisVisible = xAxisVisible,
-        yAxisVisible = yAxisVisible,
-        dpScale = scale,
-    )
+    val bitmap =
+        renderChartBitmap(
+            marks = marks,
+            width = bitmapWidth,
+            height = bitmapHeight,
+            foregroundStyleScale = foregroundStyleScale,
+            xAxisVisible = xAxisVisible,
+            yAxisVisible = yAxisVisible,
+            dpScale = scale,
+        )
 
     var sizeModifier = finalModifier
-    sizeModifier = sizeModifier.then(
-        when {
-            widthIsFill -> GlanceModifier.fillMaxWidth()
-            else -> GlanceModifier.width(chartWidthDp.dp)
-        }
-    )
-    sizeModifier = sizeModifier.then(
-        when {
-            heightIsFill -> GlanceModifier.fillMaxHeight()
-            else -> GlanceModifier.height(chartHeightDp.dp)
-        }
-    )
+    sizeModifier =
+        sizeModifier.then(
+            when {
+                widthIsFill -> GlanceModifier.fillMaxWidth()
+                else -> GlanceModifier.width(chartWidthDp.dp)
+            },
+        )
+    sizeModifier =
+        sizeModifier.then(
+            when {
+                heightIsFill -> GlanceModifier.fillMaxHeight()
+                else -> GlanceModifier.height(chartHeightDp.dp)
+            },
+        )
 
     val icon = Icon.createWithBitmap(bitmap)
 
