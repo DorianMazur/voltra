@@ -64,6 +64,7 @@ public enum VoltraWidgetServerFetcher {
   /// The request includes:
   /// - `widgetId` query parameter
   /// - `family` query parameter (e.g., "systemSmall")
+  /// - `platform` query parameter (`ios`)
   /// - `Authorization: Bearer <token>` header (if credentials stored in Keychain)
   /// - Any custom headers stored in Keychain
   ///
@@ -84,6 +85,7 @@ public enum VoltraWidgetServerFetcher {
     var queryItems = components.queryItems ?? []
     queryItems.append(URLQueryItem(name: "widgetId", value: widgetId))
     queryItems.append(URLQueryItem(name: "family", value: family))
+    queryItems.append(URLQueryItem(name: "platform", value: "ios"))
     components.queryItems = queryItems
 
     guard let url = components.url else {

@@ -43,12 +43,12 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
 
 **`serverUpdate` options:**
 
-- `url`: The Voltra SSR endpoint that returns widget JSON. The widget ID and family are appended as query parameters automatically (e.g. `?widgetId=dynamic_weather&family=systemSmall`).
+- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform=ios`, and `family` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=ios&family=systemSmall`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. iOS WidgetKit may throttle requests; the minimum effective interval is ~15 minutes.
 
 ## Building the server
 
-Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform detection, token validation, and response serialization.
+Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
@@ -58,6 +58,7 @@ import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
 const handler = createWidgetUpdateHandler({
   renderIos: async (req) => {
     // req.widgetId — the widget requesting an update
+    // req.platform — always "ios" for iOS widget requests
     // req.family   — the widget size ("systemSmall", "systemMedium", etc.)
     // req.token    — the auth token (if credentials were set)
 
@@ -100,6 +101,7 @@ The handler responds to GET requests with these query parameters:
 | Parameter | Description |
 |-----------|-------------|
 | `widgetId` | The widget identifier (required) |
+| `platform` | The requesting platform. Must be `ios` for iOS widgets (required). |
 | `family` | The widget family/size (iOS only) |
 
 The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `renderIos`.
@@ -208,7 +210,7 @@ Provide a meaningful initial state (e.g. "Loading..." or placeholder content) ra
 └─────────────────┘                                              │
                                                                  │ reads token
                                                                  ▼
-┌─────────────────┐     GET ?widgetId=X&family=Y         ┌──────────────────┐
+┌─────────────────┐ GET ?widgetId=X&platform=ios&family=Y ┌──────────────────┐
 │  WidgetKit       │ ──────────────────────────────────►  │  Your Server     │
 │  (extension)     │ ◄──────────────────────────────────  │  (Voltra SSR)    │
 └─────────────────┘          JSON payload                 └──────────────────┘

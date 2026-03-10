@@ -59,6 +59,7 @@ class VoltraWidgetUpdateWorker(
                 val urlBuilder = StringBuilder(serverUrl)
                 urlBuilder.append(if (serverUrl.contains("?")) "&" else "?")
                 urlBuilder.append("widgetId=").append(widgetId)
+                urlBuilder.append("&platform=android")
 
                 val url = URL(urlBuilder.toString())
                 val connection = url.openConnection() as HttpURLConnection

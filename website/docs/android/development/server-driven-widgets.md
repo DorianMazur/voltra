@@ -46,7 +46,7 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 
 **`serverUpdate` options:**
 
-- `url`: The Voltra SSR endpoint that returns widget JSON. The widget ID is appended as a query parameter automatically (e.g. `?widgetId=dynamic_weather`).
+- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId` and `platform=android` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `60`. The minimum effective interval is 15 minutes (WorkManager requirement).
 
 :::note
@@ -55,7 +55,7 @@ On the Android emulator, use `10.0.2.2` instead of `localhost` to reach the host
 
 ## Building the server
 
-Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform detection, token validation, and response serialization.
+Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
@@ -66,6 +66,7 @@ import { VoltraAndroid } from 'voltra/android'
 const handler = createWidgetUpdateHandler({
   renderAndroid: async (req) => {
     // req.widgetId — the widget requesting an update
+    // req.platform — always "android" for Android widget requests
     // req.token    — the auth token (if credentials were set)
 
     const weather = await fetchWeatherData()
@@ -117,9 +118,8 @@ The handler responds to GET requests with these query parameters:
 | Parameter | Description |
 |-----------|-------------|
 | `widgetId` | The widget identifier (required) |
+| `platform` | The requesting platform. Must be `android` or `ios` (required). |
 | `family` | The widget family/size (iOS only — absent for Android) |
-
-Platform detection is automatic: requests with a `family` parameter are treated as iOS, requests without it as Android.
 
 ## Authentication
 
@@ -216,7 +216,7 @@ const handler = createWidgetUpdateHandler({
 })
 ```
 
-The handler automatically detects the platform from the request and routes to the correct render function.
+The handler uses the required `platform` query parameter to route requests to the correct render function.
 
 ## Architecture overview
 
@@ -227,7 +227,7 @@ The handler automatically detects the platform from the request and routes to th
 └─────────────────┘                                            │
                                                                │ reads token
                                                                ▼
-┌─────────────────┐     GET ?widgetId=X              ┌──────────────────┐
+┌─────────────────┐ GET ?widgetId=X&platform=android ┌──────────────────┐
 │  WorkManager     │ ─────────────────────────────►   │  Your Server     │
 │  (background)    │ ◄─────────────────────────────   │  (Voltra SSR)    │
 └─────────────────┘       JSON payload               └──────────────────┘

@@ -127,8 +127,8 @@ const PORT = 3333
 createServer(handler).listen(PORT, () => {
   console.log(`\n🚀 Voltra Widget Server running at http://localhost:${PORT}`)
   console.log(`\nThe widget will fetch from:`)
-  console.log(`  iOS:     GET http://localhost:${PORT}?widgetId=dynamic_weather&family=systemSmall`)
-  console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=dynamic_weather`)
+  console.log(`  iOS:     GET http://localhost:${PORT}?widgetId=dynamic_weather&platform=ios&family=systemSmall`)
+  console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=dynamic_weather&platform=android`)
   console.log(`\n  (Android emulator uses 10.0.2.2 to reach the host machine)`)
   console.log(`\nEach request cycles through different weather conditions.`)
   console.log(`Press Ctrl+C to stop.\n`)

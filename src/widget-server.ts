@@ -13,9 +13,13 @@ export type { WidgetVariants } from './widgets/types.js'
 
 /**
  * The platform that sent the widget update request.
- * Detected automatically from the request query parameters.
+ * Read from the `platform` query parameter.
  */
 export type WidgetPlatform = 'ios' | 'android'
+
+function isWidgetPlatform(value: string | null): value is WidgetPlatform {
+  return value === 'ios' || value === 'android'
+}
 
 /**
  * Request context provided to the widget render handler.
@@ -24,7 +28,7 @@ export type WidgetPlatform = 'ios' | 'android'
 export interface WidgetRenderRequest {
   /** The widget ID requesting an update */
   widgetId: string
-  /** The platform the request is coming from (detected automatically) */
+  /** The platform the request is coming from */
   platform: WidgetPlatform
   /** The widget family/size (iOS only: "systemSmall", "systemMedium", etc.) */
   family?: string
@@ -71,7 +75,7 @@ export interface WidgetUpdateHandlerOptions {
  *
  * This handler can be used with Node.js HTTP server, Express, or any
  * compatible framework. It:
- * 1. Extracts widgetId and family from query parameters
+ * 1. Extracts widgetId, platform, and family from query parameters
  * 2. Validates the auth token (if validateToken is provided)
  * 3. Calls your render function to generate widget content
  * 4. Returns the rendered JSON payload
@@ -87,15 +91,21 @@ export function createWidgetUpdateHandler(
       const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
       const widgetId = url.searchParams.get('widgetId')
       const family = url.searchParams.get('family') || undefined
-
-      // Detect platform
-      const platform: WidgetPlatform = family ? 'ios' : 'android'
+      const platformParam = url.searchParams.get('platform')
 
       if (!widgetId) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'Missing required query parameter: widgetId' }))
         return
       }
+
+      if (!isWidgetPlatform(platformParam)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Missing or invalid required query parameter: platform' }))
+        return
+      }
+
+      const platform: WidgetPlatform = platformParam
 
       // Extract auth token
       const authHeader = req.headers.authorization
