@@ -3,7 +3,6 @@ import * as util from 'util'
 
 import type { WidgetFiles } from '../../types'
 
- 
 const pbxFile = require('xcode/lib/pbxFile')
 
 export interface AddBuildPhasesOptions {

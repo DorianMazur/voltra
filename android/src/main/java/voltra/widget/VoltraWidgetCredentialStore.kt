@@ -36,10 +36,14 @@ object VoltraWidgetCredentialStore {
      * Save an auth token (encrypted via Tink AEAD).
      * Called from the main app after user login.
      */
-    suspend fun saveToken(context: Context, token: String): Boolean {
-        return try {
-            val encrypted = VoltraCryptoManager.encrypt(context, token)
-                ?: throw IllegalStateException("Failed to encrypt token")
+    suspend fun saveToken(
+        context: Context,
+        token: String,
+    ): Boolean =
+        try {
+            val encrypted =
+                VoltraCryptoManager.encrypt(context, token)
+                    ?: throw IllegalStateException("Failed to encrypt token")
             context.voltraCredentialsDataStore.edit { prefs ->
                 prefs[KEY_TOKEN] = encrypted
             }
@@ -49,23 +53,22 @@ object VoltraWidgetCredentialStore {
             Log.e(TAG, "Failed to save token: ${e.message}", e)
             false
         }
-    }
 
     /**
      * Read the auth token (decrypted via Tink AEAD).
      * Called from the WorkManager Worker during background fetch.
      */
-    suspend fun readToken(context: Context): String? {
-        return try {
-            val encrypted = context.voltraCredentialsDataStore.data
-                .map { prefs -> prefs[KEY_TOKEN] }
-                .firstOrNull()
+    suspend fun readToken(context: Context): String? =
+        try {
+            val encrypted =
+                context.voltraCredentialsDataStore.data
+                    .map { prefs -> prefs[KEY_TOKEN] }
+                    .firstOrNull()
             encrypted?.let { VoltraCryptoManager.decrypt(context, it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read token: ${e.message}", e)
             null
         }
-    }
 
     /**
      * Read the auth token synchronously (blocking).
@@ -91,8 +94,9 @@ object VoltraWidgetCredentialStore {
                 // Save new headers with encrypted values
                 val headerKeys = mutableSetOf<String>()
                 headers.forEach { (key, value) ->
-                    val encrypted = VoltraCryptoManager.encrypt(context, value)
-                        ?: throw IllegalStateException("Failed to encrypt header value for key: $key")
+                    val encrypted =
+                        VoltraCryptoManager.encrypt(context, value)
+                            ?: throw IllegalStateException("Failed to encrypt header value for key: $key")
                     prefs[stringPreferencesKey("$KEY_HEADERS_PREFIX$key")] = encrypted
                     headerKeys.add(key)
                 }

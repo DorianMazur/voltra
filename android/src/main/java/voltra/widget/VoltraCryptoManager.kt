@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Base64
 import android.util.Log
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.KeysetHandle
 import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.KeysetHandle
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 
@@ -32,21 +32,22 @@ object VoltraCryptoManager {
      * Get or initialize the AEAD primitive.
      * Thread-safe via double-checked locking.
      */
-    private fun getAead(context: Context): Aead {
-        return aead ?: synchronized(this) {
+    private fun getAead(context: Context): Aead =
+        aead ?: synchronized(this) {
             aead ?: initAead(context).also { aead = it }
         }
-    }
 
     private fun initAead(context: Context): Aead {
         AeadConfig.register()
 
-        val keysetHandle: KeysetHandle = AndroidKeysetManager.Builder()
-            .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-            .withMasterKeyUri(MASTER_KEY_URI)
-            .build()
-            .keysetHandle
+        val keysetHandle: KeysetHandle =
+            AndroidKeysetManager
+                .Builder()
+                .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
+                .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+                .withMasterKeyUri(MASTER_KEY_URI)
+                .build()
+                .keysetHandle
 
         return keysetHandle.getPrimitive(Aead::class.java)
     }
@@ -59,8 +60,12 @@ object VoltraCryptoManager {
      * @param plaintext The string to encrypt
      * @param associatedData Optional associated data for AEAD authentication
      */
-    fun encrypt(context: Context, plaintext: String, associatedData: ByteArray = ByteArray(0)): String? {
-        return try {
+    fun encrypt(
+        context: Context,
+        plaintext: String,
+        associatedData: ByteArray = ByteArray(0),
+    ): String? =
+        try {
             val aead = getAead(context)
             val ciphertext = aead.encrypt(plaintext.toByteArray(Charsets.UTF_8), associatedData)
             Base64.encodeToString(ciphertext, Base64.NO_WRAP)
@@ -68,7 +73,6 @@ object VoltraCryptoManager {
             Log.e(TAG, "Encryption failed: ${e.message}", e)
             null
         }
-    }
 
     /**
      * Decrypt a Base64-encoded ciphertext string.
@@ -78,8 +82,12 @@ object VoltraCryptoManager {
      * @param encryptedBase64 The Base64-encoded ciphertext to decrypt
      * @param associatedData Optional associated data for AEAD authentication (must match encryption)
      */
-    fun decrypt(context: Context, encryptedBase64: String, associatedData: ByteArray = ByteArray(0)): String? {
-        return try {
+    fun decrypt(
+        context: Context,
+        encryptedBase64: String,
+        associatedData: ByteArray = ByteArray(0),
+    ): String? =
+        try {
             val aead = getAead(context)
             val ciphertext = Base64.decode(encryptedBase64, Base64.NO_WRAP)
             val plaintext = aead.decrypt(ciphertext, associatedData)
@@ -88,5 +96,4 @@ object VoltraCryptoManager {
             Log.e(TAG, "Decryption failed: ${e.message}", e)
             null
         }
-    }
 }
