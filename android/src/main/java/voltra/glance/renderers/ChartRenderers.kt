@@ -59,8 +59,8 @@ fun RenderChart(
 
     val xAxisVisible = (element.p?.get("xAxisVisibility") as? String) != "hidden"
     val yAxisVisible = (element.p?.get("yAxisVisibility") as? String) != "hidden"
-    val xAxisGridVisible = element.p?.get("xAxisGridVisible") != false
-    val yAxisGridVisible = element.p?.get("yAxisGridVisible") != false
+    val xAxisGridVisible = (element.p?.get("xAxisGridVisible") as? Boolean) ?: true
+    val yAxisGridVisible = (element.p?.get("yAxisGridVisible") as? Boolean) ?: true
 
     val (_, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
     val styleWidth = compositeStyle?.layout?.width

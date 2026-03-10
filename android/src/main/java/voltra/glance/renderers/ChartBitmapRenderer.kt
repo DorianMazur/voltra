@@ -129,10 +129,10 @@ fun renderChartBitmap(
     val canvas = Canvas(bitmap)
     canvas.drawColor(0x00000000)
 
-    val paddingLeft = if (yAxisVisible) 48f else 16f
-    val paddingBottom = if (xAxisVisible) 40f else 16f
-    val paddingTop = 16f
-    val paddingRight = 16f
+    val paddingLeft = if (yAxisVisible) 48f else 0f
+    val paddingBottom = if (xAxisVisible) 40f else 0f
+    val paddingTop = if (yAxisVisible) 16f else 0f
+    val paddingRight = 0f
 
     val chartLeft = paddingLeft
     val chartTop = paddingTop
