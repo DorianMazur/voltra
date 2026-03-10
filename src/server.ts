@@ -14,15 +14,15 @@ export type { WidgetVariants } from './widgets/types.js'
 
 // Widget Server Update Handler
 export {
+  createWidgetUpdateExpressHandler,
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
-  createWidgetUpdateExpressHandler,
-  type WidgetUpdateHandler,
-  type WidgetUpdateNodeHandler,
-  type WidgetUpdateExpressHandler,
   type WidgetPlatform,
   type WidgetRenderRequest,
+  type WidgetUpdateExpressHandler,
+  type WidgetUpdateHandler,
   type WidgetUpdateHandlerOptions,
+  type WidgetUpdateNodeHandler,
 } from './widget-server.js'
 
 const brotliCompressAsync = promisify(brotliCompress)

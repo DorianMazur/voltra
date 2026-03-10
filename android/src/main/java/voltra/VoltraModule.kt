@@ -334,8 +334,9 @@ class VoltraModule : Module() {
                 Log.d(TAG, "setWidgetServerCredentials called")
 
                 val context = appContext.reactContext!!
-                val token = credentials["token"] as? String
-                    ?: throw IllegalArgumentException("token is required in credentials")
+                val token =
+                    credentials["token"] as? String
+                        ?: throw IllegalArgumentException("token is required in credentials")
 
                 @Suppress("UNCHECKED_CAST")
                 val headers = credentials["headers"] as? Map<String, String>

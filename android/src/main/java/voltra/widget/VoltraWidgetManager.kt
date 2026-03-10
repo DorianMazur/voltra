@@ -325,7 +325,10 @@ class VoltraWidgetManager(
             val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
             val allWidgetIds = widgetIds + serverDrivenIds
 
-            Log.d(TAG, "Found ${allWidgetIds.size} widgets to reload (${widgetIds.size} cached, ${serverDrivenIds.size} server-driven)")
+            Log.d(
+                TAG,
+                "Found ${allWidgetIds.size} widgets to reload (${widgetIds.size} cached, ${serverDrivenIds.size} server-driven)",
+            )
 
             for (widgetId in allWidgetIds) {
                 try {

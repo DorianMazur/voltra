@@ -11,7 +11,7 @@ const WIDGET_ID = 'image_fallback'
 
 type ExampleType = 'colors' | 'styled' | 'transparent' | 'custom' | 'mixed'
 
-const EXAMPLES: Array<{ id: ExampleType; title: string; description: string }> = [
+const EXAMPLES: { id: ExampleType; title: string; description: string }[] = [
   {
     id: 'colors',
     title: 'Background Colors',

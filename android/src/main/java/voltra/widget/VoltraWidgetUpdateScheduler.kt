@@ -21,7 +21,7 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 private val Context.voltraServerUrlsDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "voltra_widget_server_urls"
+    name = "voltra_widget_server_urls",
 )
 
 /**
@@ -65,13 +65,15 @@ object VoltraWidgetUpdateScheduler {
         val effectiveInterval = maxOf(intervalMinutes, 15L)
 
         val inputData =
-            Data.Builder()
+            Data
+                .Builder()
                 .putString(VoltraWidgetUpdateWorker.KEY_WIDGET_ID, widgetId)
                 .putString(VoltraWidgetUpdateWorker.KEY_SERVER_URL, serverUrl)
                 .build()
 
         val constraints =
-            Constraints.Builder()
+            Constraints
+                .Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
@@ -79,13 +81,13 @@ object VoltraWidgetUpdateScheduler {
             PeriodicWorkRequestBuilder<VoltraWidgetUpdateWorker>(
                 effectiveInterval,
                 TimeUnit.MINUTES,
-            )
-                .setInputData(inputData)
+            ).setInputData(inputData)
                 .setConstraints(constraints)
                 .addTag(VoltraWidgetUpdateWorker.TAG)
                 .build()
 
-        WorkManager.getInstance(context)
+        WorkManager
+            .getInstance(context)
             .enqueueUniquePeriodicWork(
                 workName,
                 ExistingPeriodicWorkPolicy.UPDATE,
@@ -112,13 +114,15 @@ object VoltraWidgetUpdateScheduler {
         }
 
         val inputData =
-            Data.Builder()
+            Data
+                .Builder()
                 .putString(VoltraWidgetUpdateWorker.KEY_WIDGET_ID, widgetId)
                 .putString(VoltraWidgetUpdateWorker.KEY_SERVER_URL, serverUrl)
                 .build()
 
         val constraints =
-            Constraints.Builder()
+            Constraints
+                .Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
@@ -138,9 +142,10 @@ object VoltraWidgetUpdateScheduler {
     /**
      * Check whether a widget has a server URL registered (i.e. is server-driven).
      */
-    suspend fun hasServerUrl(context: Context, widgetId: String): Boolean {
-        return readServerUrl(context, widgetId) != null
-    }
+    suspend fun hasServerUrl(
+        context: Context,
+        widgetId: String,
+    ): Boolean = readServerUrl(context, widgetId) != null
 
     /**
      * Cancel periodic server updates for a widget.
@@ -166,7 +171,11 @@ object VoltraWidgetUpdateScheduler {
 
     // -- DataStore helpers for server URL persistence --
 
-    private suspend fun saveServerUrl(context: Context, widgetId: String, serverUrl: String) {
+    private suspend fun saveServerUrl(
+        context: Context,
+        widgetId: String,
+        serverUrl: String,
+    ) {
         val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
         context.voltraServerUrlsDataStore.edit { prefs ->
             prefs[urlKey] = serverUrl
@@ -176,7 +185,10 @@ object VoltraWidgetUpdateScheduler {
         }
     }
 
-    suspend fun readServerUrl(context: Context, widgetId: String): String? {
+    suspend fun readServerUrl(
+        context: Context,
+        widgetId: String,
+    ): String? {
         val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
         return try {
             context.voltraServerUrlsDataStore.data
@@ -191,8 +203,8 @@ object VoltraWidgetUpdateScheduler {
     /**
      * Return all widget IDs that have a server URL registered.
      */
-    suspend fun getAllServerDrivenWidgetIds(context: Context): Set<String> {
-        return try {
+    suspend fun getAllServerDrivenWidgetIds(context: Context): Set<String> =
+        try {
             context.voltraServerUrlsDataStore.data
                 .map { prefs -> prefs[KEY_WIDGET_IDS] ?: emptySet() }
                 .firstOrNull() ?: emptySet()
@@ -200,9 +212,11 @@ object VoltraWidgetUpdateScheduler {
             Log.e(TAG, "Failed to read server-driven widget IDs: ${e.message}", e)
             emptySet()
         }
-    }
 
-    private suspend fun removeServerUrl(context: Context, widgetId: String) {
+    private suspend fun removeServerUrl(
+        context: Context,
+        widgetId: String,
+    ) {
         val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
         context.voltraServerUrlsDataStore.edit { prefs ->
             prefs.remove(urlKey)

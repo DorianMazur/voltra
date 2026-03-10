@@ -9,13 +9,13 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import voltra.BuildConfig
 import voltra.glance.RemoteViewsGenerator
 import voltra.parsing.VoltraPayloadParser
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import voltra.BuildConfig
 
 /**
  * Background Worker that fetches widget content from a remote Voltra SSR server
@@ -38,6 +38,7 @@ class VoltraWidgetUpdateWorker(
         const val KEY_WIDGET_ID = "widget_id"
         const val KEY_SERVER_URL = "server_url"
         const val WORK_NAME_PREFIX = "voltra_widget_update_"
+
         /** Stop retrying after this many consecutive failures to avoid infinite retry loops. */
         const val MAX_RETRIES = 3
     }
@@ -86,7 +87,10 @@ class VoltraWidgetUpdateWorker(
                     // 4. Execute request
                     val responseCode = connection.responseCode
                     if (responseCode !in 200..299) {
-                        Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId' (attempt $runAttemptCount)")
+                        Log.e(
+                            TAG,
+                            "Server returned HTTP $responseCode for widget '$widgetId' (attempt $runAttemptCount)",
+                        )
                         return@withContext if (runAttemptCount >= MAX_RETRIES) {
                             Log.w(TAG, "Max retries ($MAX_RETRIES) reached for widget '$widgetId', giving up")
                             Result.failure()
