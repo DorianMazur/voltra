@@ -623,7 +623,9 @@ private func jsonValue(from value: Any) -> JSONValue? {
 private struct ChartLegendItem: Identifiable {
   let label: String
   let swatch: Color
-  var id: String { label }
+  var id: String {
+    label
+  }
 }
 
 @available(iOS 16.0, macOS 13.0, *)

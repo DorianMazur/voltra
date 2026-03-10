@@ -107,7 +107,7 @@ enum JSColorParser {
 
   // MARK: - Hex Parser
 
-  // Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
+  /// Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
   private static func parseHex(_ hex: String) -> Color? {
     let hexSanitized = hex.replacingOccurrences(of: "#", with: "")
 
@@ -147,7 +147,7 @@ enum JSColorParser {
 
   // MARK: - RGB Parser
 
-  // rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
+  /// rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
   private static func parseRGB(_ string: String) -> Color? {
     let cleaned = string
       .replacingOccurrences(of: "rgba", with: "")
@@ -169,7 +169,7 @@ enum JSColorParser {
 
   // MARK: - HSL Parser
 
-  // hsl(120, 100%, 50%) / hsla(...)
+  /// hsl(120, 100%, 50%) / hsla(...)
   private static func parseHSL(_ string: String) -> Color? {
     let cleaned = string
       .replacingOccurrences(of: "hsla", with: "")

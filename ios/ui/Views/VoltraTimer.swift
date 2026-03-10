@@ -28,7 +28,9 @@ public struct VoltraTimer: VoltraView {
     )
   }
 
-  private func resolvedEndDate(params: TimerParameters) -> Date? { progressRange(params: params)?.upperBound }
+  private func resolvedEndDate(params: TimerParameters) -> Date? {
+    progressRange(params: params)?.upperBound
+  }
 
   private func countsDown(params: TimerParameters) -> Bool {
     (params.direction.lowercased()) != "up"
@@ -123,10 +125,4 @@ public struct VoltraTimer: VoltraView {
       Text(template)
     }
   }
-}
-
-// MARK: - Formatters
-
-extension VoltraTimer {
-  // Formatters are no longer needed for live updates but kept if we need static fallbacks.
 }
