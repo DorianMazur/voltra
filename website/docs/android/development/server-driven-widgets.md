@@ -55,15 +55,21 @@ On the Android emulator, use `10.0.2.2` instead of `localhost` to reach the host
 
 ## Building the server
 
-Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform validation, token validation, and response serialization.
+Voltra provides three widget server handlers from `voltra/server`:
+
+- `createWidgetUpdateHandler()` for Fetch-compatible runtimes like Bun, Deno, Hono, and Expo API routes
+- `createWidgetUpdateNodeHandler()` for `node:http`
+- `createWidgetUpdateExpressHandler()` for Express-style request/response handlers
+
+All three share the same widget request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
 import React from 'react'
-import { createWidgetUpdateHandler } from 'voltra/server'
+import { createWidgetUpdateNodeHandler } from 'voltra/server'
 import { VoltraAndroid } from 'voltra/android'
 
-const handler = createWidgetUpdateHandler({
+const handler = createWidgetUpdateNodeHandler({
   renderAndroid: async (req) => {
     // req.widgetId — the widget requesting an update
     // req.platform — always "android" for Android widget requests
@@ -217,6 +223,8 @@ const handler = createWidgetUpdateHandler({
 ```
 
 The handler uses the required `platform` query parameter to route requests to the correct render function.
+
+If you're serving the endpoint from Node or Express, use `createWidgetUpdateNodeHandler()` or `createWidgetUpdateExpressHandler()` instead.
 
 ## Architecture overview
 

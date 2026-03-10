@@ -10,7 +10,7 @@ import { createServer } from 'node:http'
 
 import React from 'react'
 import { VoltraAndroid } from 'voltra/android'
-import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
+import { createWidgetUpdateNodeHandler, Voltra } from 'voltra/server'
 
 const WEATHER_CONDITIONS = [
   { condition: 'Sunny', emoji: '☀️', temp: 72, colors: ['#FFD700', '#FFA500'] as const },
@@ -29,7 +29,7 @@ function getWeather() {
   return weather
 }
 
-const handler = createWidgetUpdateHandler({
+const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req: any) => {
     const weather = getWeather()
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })

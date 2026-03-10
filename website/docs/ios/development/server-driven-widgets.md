@@ -48,14 +48,20 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
 
 ## Building the server
 
-Voltra provides `createWidgetUpdateHandler` from `voltra/server` to build your widget endpoint. It handles request parsing, platform validation, token validation, and response serialization.
+Voltra provides three widget server handlers from `voltra/server`:
+
+- `createWidgetUpdateHandler()` for Fetch-compatible runtimes like Bun, Deno, Hono, and Expo API routes
+- `createWidgetUpdateNodeHandler()` for `node:http`
+- `createWidgetUpdateExpressHandler()` for Express-style request/response handlers
+
+All three share the same widget request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
 import React from 'react'
-import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
+import { createWidgetUpdateNodeHandler, Voltra } from 'voltra/server'
 
-const handler = createWidgetUpdateHandler({
+const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req) => {
     // req.widgetId — the widget requesting an update
     // req.platform — always "ios" for iOS widget requests
@@ -105,6 +111,18 @@ The handler responds to GET requests with these query parameters:
 | `family` | The widget family/size (iOS only) |
 
 The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `renderIos`.
+
+For Fetch-native runtimes, use `createWidgetUpdateHandler()` instead of the Node adapter:
+
+```tsx
+import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
+
+export const GET = createWidgetUpdateHandler({
+  renderIos: async (req) => ({
+    systemSmall: <Voltra.Text>{req.widgetId}</Voltra.Text>,
+  }),
+})
+```
 
 ## Authentication
 

@@ -21,6 +21,21 @@ function isWidgetPlatform(value: string | null): value is WidgetPlatform {
   return value === 'ios' || value === 'android'
 }
 
+type NodeLikeRequest = IncomingMessage & {
+  url?: string
+  method?: string
+  headers: Record<string, string | string[] | undefined>
+  socket?: {
+    encrypted?: boolean
+  }
+}
+
+type NodeLikeResponse = ServerResponse
+
+export type WidgetUpdateHandler = (request: Request) => Promise<Response>
+export type WidgetUpdateNodeHandler = (req: NodeLikeRequest, res: NodeLikeResponse) => Promise<void>
+export type WidgetUpdateExpressHandler = WidgetUpdateNodeHandler
+
 /**
  * Request context provided to the widget render handler.
  * Contains the widget ID, family, and any auth headers from the request.
@@ -70,117 +85,188 @@ export interface WidgetUpdateHandlerOptions {
   validateToken?: (token: string) => Promise<boolean> | boolean
 }
 
+function jsonResponse(status: number, body: Record<string, string>): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+function normalizeHeaders(headers: Headers): Record<string, string> {
+  const result: Record<string, string> = {}
+
+  headers.forEach((value, key) => {
+    result[key] = value
+  })
+
+  return result
+}
+
+function getNodeRequestUrl(req: NodeLikeRequest): string {
+  const protocol = req.socket?.encrypted ? 'https' : 'http'
+  const host = req.headers.host || 'localhost'
+  return new URL(req.url || '/', `${protocol}://${host}`).toString()
+}
+
+function createFetchRequestFromNode(req: NodeLikeRequest): Request {
+  const headers = new Headers()
+
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        headers.append(key, item)
+      }
+      continue
+    }
+
+    if (typeof value === 'string') {
+      headers.set(key, value)
+    }
+  }
+
+  return new Request(getNodeRequestUrl(req), {
+    method: req.method || 'GET',
+    headers,
+  })
+}
+
+async function writeFetchResponseToNode(response: Response, res: NodeLikeResponse): Promise<void> {
+  const headers: Record<string, string> = {}
+
+  response.headers.forEach((value, key) => {
+    headers[key] = value
+  })
+
+  res.writeHead(response.status, headers)
+  res.end(await response.text())
+}
+
 /**
- * Creates an HTTP request handler for serving widget updates.
+ * Creates a Fetch API request handler for serving widget updates.
  *
- * This handler can be used with Node.js HTTP server, Express, or any
- * compatible framework. It:
+ * This handler can be used with Bun, Deno, Hono, Expo API routes, or any
+ * compatible runtime. It:
  * 1. Extracts widgetId, platform, and family from query parameters
  * 2. Validates the auth token (if validateToken is provided)
  * 3. Calls your render function to generate widget content
  * 4. Returns the rendered JSON payload
  *
  */
-export function createWidgetUpdateHandler(
-  options: WidgetUpdateHandlerOptions
-): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateHandler {
   const { renderIos, renderAndroid, validateToken } = options
 
-  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+  return async (request: Request): Promise<Response> => {
     try {
-      const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+      const url = new URL(request.url)
       const widgetId = url.searchParams.get('widgetId')
       const family = url.searchParams.get('family') || undefined
       const platformParam = url.searchParams.get('platform')
 
       if (!widgetId) {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Missing required query parameter: widgetId' }))
-        return
+        return jsonResponse(400, { error: 'Missing required query parameter: widgetId' })
       }
 
       if (!isWidgetPlatform(platformParam)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Missing or invalid required query parameter: platform' }))
-        return
+        return jsonResponse(400, { error: 'Missing or invalid required query parameter: platform' })
       }
 
       const platform: WidgetPlatform = platformParam
 
       // Extract auth token
-      const authHeader = req.headers.authorization
+      const authHeader = request.headers.get('authorization')
       const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
 
       // Validate token if validator is provided
       if (validateToken) {
         if (!token) {
-          res.writeHead(401, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Authorization required' }))
-          return
+          return jsonResponse(401, { error: 'Authorization required' })
         }
 
         const isValid = await validateToken(token)
         if (!isValid) {
-          res.writeHead(401, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Invalid token' }))
-          return
+          return jsonResponse(401, { error: 'Invalid token' })
         }
       }
 
       // Build request context
-      const request: WidgetRenderRequest = {
+      const renderRequest: WidgetRenderRequest = {
         widgetId,
         platform,
         family,
         token,
-        headers: req.headers as Record<string, string | string[] | undefined>,
+        headers: normalizeHeaders(request.headers),
       }
 
       if (platform === 'android') {
         if (!renderAndroid) {
-          res.writeHead(404, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: `No Android render handler configured for widget: ${widgetId}` }))
-          return
+          return jsonResponse(404, { error: `No Android render handler configured for widget: ${widgetId}` })
         }
 
-        const androidVariants = await renderAndroid(request)
+        const androidVariants = await renderAndroid(renderRequest)
 
         if (!androidVariants) {
-          res.writeHead(404, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: `No content for Android widget: ${widgetId}` }))
-          return
+          return jsonResponse(404, { error: `No content for Android widget: ${widgetId}` })
         }
 
         const { renderAndroidWidgetToString } = await import('./android/widgets/renderer.js')
         const jsonPayload = renderAndroidWidgetToString(androidVariants)
 
-        res.writeHead(200, {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
+        return new Response(jsonPayload, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
         })
-        res.end(jsonPayload)
       } else {
-        const variants = await renderIos(request)
+        const variants = await renderIos(renderRequest)
 
         if (!variants) {
-          res.writeHead(404, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: `No content for widget: ${widgetId}` }))
-          return
+          return jsonResponse(404, { error: `No content for widget: ${widgetId}` })
         }
 
         const { renderWidgetToString } = await import('./widgets/renderer.js')
         const jsonPayload = renderWidgetToString(variants as WidgetVariants)
 
-        res.writeHead(200, {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
+        return new Response(jsonPayload, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
         })
-        res.end(jsonPayload)
       }
     } catch (error) {
       console.error('[Voltra] Widget update handler error:', error)
-      res.writeHead(500, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'Internal server error' }))
+      return jsonResponse(500, { error: 'Internal server error' })
     }
   }
+}
+
+/**
+ * Creates a Node.js HTTP request handler for serving widget updates.
+ *
+ * This adapter delegates to the Fetch-native widget update handler and can be
+ * used with `node:http` or frameworks built on top of Node request/response objects.
+ */
+export function createWidgetUpdateNodeHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler {
+  const handler = createWidgetUpdateHandler(options)
+
+  return async (req: NodeLikeRequest, res: NodeLikeResponse): Promise<void> => {
+    const request = createFetchRequestFromNode(req)
+    const response = await handler(request)
+    await writeFetchResponseToNode(response, res)
+  }
+}
+
+/**
+ * Creates an Express-compatible request handler for serving widget updates.
+ *
+ * This adapter currently reuses the Node.js handler because Express request and
+ * response objects extend the underlying Node HTTP primitives.
+ */
+export function createWidgetUpdateExpressHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler {
+  return createWidgetUpdateNodeHandler(options)
 }

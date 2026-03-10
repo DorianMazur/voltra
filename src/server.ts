@@ -15,6 +15,11 @@ export type { WidgetVariants } from './widgets/types.js'
 // Widget Server Update Handler
 export {
   createWidgetUpdateHandler,
+  createWidgetUpdateNodeHandler,
+  createWidgetUpdateExpressHandler,
+  type WidgetUpdateHandler,
+  type WidgetUpdateNodeHandler,
+  type WidgetUpdateExpressHandler,
   type WidgetPlatform,
   type WidgetRenderRequest,
   type WidgetUpdateHandlerOptions,
