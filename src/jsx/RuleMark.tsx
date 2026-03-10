@@ -1,4 +1,5 @@
 import { createElement } from 'react'
+
 import { VOLTRA_MARK_TAG } from './BarMark.js'
 
 export type RuleMarkProps = {

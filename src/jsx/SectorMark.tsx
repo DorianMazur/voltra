@@ -1,6 +1,7 @@
 import { createElement } from 'react'
-import type { SectorDataPoint } from './chart-types.js'
+
 import { VOLTRA_MARK_TAG } from './BarMark.js'
+import type { SectorDataPoint } from './chart-types.js'
 
 export type SectorMarkProps = {
   data: SectorDataPoint[]

@@ -1,4 +1,5 @@
 import { createElement } from 'react'
+
 import { VOLTRA_MARK_TAG } from '../../jsx/BarMark.js'
 import type { ChartDataPoint } from './chart-types.js'
 
