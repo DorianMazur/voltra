@@ -30,16 +30,21 @@ private val typefaceCache = LruCache<String, Typeface>(10)
  *
  * Returns null if nothing could be resolved.
  */
-fun loadTypeface(context: Context, family: String, bold: Boolean = false): Typeface? {
+fun loadTypeface(
+    context: Context,
+    family: String,
+    bold: Boolean = false,
+): Typeface? {
     val cacheKey = "$family-$bold"
     typefaceCache.get(cacheKey)?.let { return it }
 
     val baseStyle = if (bold) Typeface.BOLD else Typeface.NORMAL
 
-    val candidates = listOf(
-        "fonts/$family.ttf",
-        "fonts/$family.otf",
-    )
+    val candidates =
+        listOf(
+            "fonts/$family.ttf",
+            "fonts/$family.otf",
+        )
 
     for (path in candidates) {
         try {
@@ -78,41 +83,45 @@ fun renderTextBitmap(
     val density = context.resources.displayMetrics.density
     val fontSizePx = textStyle.fontSize.value * density
 
-    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.typeface = typeface
-        this.textSize = fontSizePx
-        textStyle.color?.let { this.color = it.toArgb() }
-        if (textStyle.letterSpacing.value > 0) {
-            this.letterSpacing = textStyle.letterSpacing.value / textStyle.fontSize.value
+    val paint =
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            this.textSize = fontSizePx
+            textStyle.color?.let { this.color = it.toArgb() }
+            if (textStyle.letterSpacing.value > 0) {
+                this.letterSpacing = textStyle.letterSpacing.value / textStyle.fontSize.value
+            }
+            if (textStyle.decoration == TextDecoration.UNDERLINE ||
+                textStyle.decoration == TextDecoration.UNDERLINE_LINE_THROUGH
+            ) {
+                this.isUnderlineText = true
+            }
+            if (textStyle.decoration == TextDecoration.LINE_THROUGH ||
+                textStyle.decoration == TextDecoration.UNDERLINE_LINE_THROUGH
+            ) {
+                this.isStrikeThruText = true
+            }
         }
-        if (textStyle.decoration == TextDecoration.UNDERLINE ||
-            textStyle.decoration == TextDecoration.UNDERLINE_LINE_THROUGH
-        ) {
-            this.isUnderlineText = true
-        }
-        if (textStyle.decoration == TextDecoration.LINE_THROUGH ||
-            textStyle.decoration == TextDecoration.UNDERLINE_LINE_THROUGH
-        ) {
-            this.isStrikeThruText = true
-        }
-    }
 
-    val layoutAlignment = when (textStyle.alignment) {
-        TextAlignment.CENTER -> Layout.Alignment.ALIGN_CENTER
-        TextAlignment.END -> Layout.Alignment.ALIGN_OPPOSITE
-        TextAlignment.START -> Layout.Alignment.ALIGN_NORMAL
-    }
+    val layoutAlignment =
+        when (textStyle.alignment) {
+            TextAlignment.CENTER -> Layout.Alignment.ALIGN_CENTER
+            TextAlignment.END -> Layout.Alignment.ALIGN_OPPOSITE
+            TextAlignment.START -> Layout.Alignment.ALIGN_NORMAL
+        }
 
     val lineSpacingPx = textStyle.lineSpacing.value * density
 
     val width = if (maxWidthPx > 0) maxWidthPx else (paint.measureText(text) + 1).toInt()
 
-    val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
-        .setAlignment(layoutAlignment)
-        .setLineSpacing(lineSpacingPx, 1f)
-        .setMaxLines(textStyle.lineLimit ?: Int.MAX_VALUE)
-        .setIncludePad(false)
-        .build()
+    val layout =
+        StaticLayout.Builder
+            .obtain(text, 0, text.length, paint, width)
+            .setAlignment(layoutAlignment)
+            .setLineSpacing(lineSpacingPx, 1f)
+            .setMaxLines(textStyle.lineLimit ?: Int.MAX_VALUE)
+            .setIncludePad(false)
+            .build()
 
     val bitmapWidth = width.coerceAtLeast(1)
     val bitmapHeight = layout.height.coerceAtLeast(1)

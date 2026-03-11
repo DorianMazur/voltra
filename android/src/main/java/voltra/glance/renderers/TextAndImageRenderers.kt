@@ -54,21 +54,23 @@ fun RenderText(
     if (renderAsBitmap && textStyle.fontFamily != null) {
         val context = LocalContext.current
         val density = context.resources.displayMetrics.density
-        val isBold = textStyle.fontWeight?.let {
-            it == androidx.glance.text.FontWeight.Bold
-        } ?: false
+        val isBold =
+            textStyle.fontWeight?.let {
+                it == androidx.glance.text.FontWeight.Bold
+            } ?: false
         val typeface = loadTypeface(context, textStyle.fontFamily, isBold)
 
         if (typeface != null) {
             // Use screen width as max constraint
             val maxWidthPx = (context.resources.displayMetrics.widthPixels * 0.9f).toInt()
-            val bitmap = renderTextBitmap(
-                context = context,
-                text = text,
-                textStyle = textStyle,
-                typeface = typeface,
-                maxWidthPx = maxWidthPx,
-            )
+            val bitmap =
+                renderTextBitmap(
+                    context = context,
+                    text = text,
+                    textStyle = textStyle,
+                    typeface = typeface,
+                    maxWidthPx = maxWidthPx,
+                )
             val icon = Icon.createWithBitmap(bitmap)
             val widthDp = (bitmap.width / density).toInt()
             val heightDp = (bitmap.height / density).toInt()
@@ -76,9 +78,10 @@ fun RenderText(
                 provider = ImageProvider(icon),
                 contentDescription = text,
                 contentScale = ContentScale.Fit,
-                modifier = finalModifier
-                    .width(widthDp.dp)
-                    .height(heightDp.dp),
+                modifier =
+                    finalModifier
+                        .width(widthDp.dp)
+                        .height(heightDp.dp),
             )
             return
         }
