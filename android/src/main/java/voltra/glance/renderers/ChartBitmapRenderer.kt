@@ -137,8 +137,8 @@ fun renderChartBitmap(
     val strokeSafety = maxStrokeWidth / 2f
     val paddingLeft = if (yAxisVisible) 48f else strokeSafety
     val paddingBottom = if (xAxisVisible) 40f else strokeSafety
-    val paddingTop = if (yAxisVisible) 16f else strokeSafety
-    val paddingRight = if (yAxisVisible) 0f else strokeSafety
+    val paddingTop = if (yAxisVisible) 20f else strokeSafety
+    val paddingRight = if (xAxisVisible) 16f else strokeSafety
 
     val chartLeft = paddingLeft
     val chartTop = paddingTop
@@ -653,10 +653,11 @@ private fun drawArea(
 
         val topPath = buildInterpolatedPath(xs, ys, itp)
 
-        val fillPath = Path()
-        fillPath.moveTo(xs[0], baseline)
-        fillPath.addPath(topPath)
+        // Build fill: start at baseline under first point, trace the top edge,
+        // then line back down to baseline under last point and close.
+        val fillPath = Path(topPath)
         fillPath.lineTo(xs.last(), baseline)
+        fillPath.lineTo(xs.first(), baseline)
         fillPath.close()
 
         val fillPaint =
