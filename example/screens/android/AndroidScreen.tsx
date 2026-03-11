@@ -35,6 +35,13 @@ const ANDROID_SECTIONS = [
     route: '/android-widgets/preview',
   },
   {
+    id: 'chart-widgets',
+    title: 'Chart Widgets',
+    description:
+      'Preview chart widgets rendered via Canvas bitmap. Supports bar, line, area, point, rule, and pie/donut charts.',
+    route: '/android-widgets/charts',
+  },
+  {
     id: 'server-driven-widgets',
     title: 'Server-Driven Widgets',
     description:
