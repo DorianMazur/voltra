@@ -23,7 +23,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -35,6 +35,25 @@ jobs:
       - name: Run JS linter
         run: npm run lint:libOnly
 
+  js-build:
+    name: '[JS] Build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build JS packages
+        run: npm run build:all
+
   typecheck:
     name: '[JS] Types validation'
     runs-on: ubuntu-latest
@@ -45,14 +64,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
   test:
     name: '[JS] Test'
@@ -64,7 +83,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -92,20 +111,22 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install example dependencies
-        run: cd example && npm ci
+      - name: Build monorepo
+        run: npm run build:all
 
       - name: Generate Android native project
-        run: cd example && npx expo prebuild --platform android --non-interactive
+        working-directory: example
+        run: CI=1 npx expo prebuild --platform android
 
       - name: Run Kotlin native tests
-        run: npm run test:kotlin
+        working-directory: example/android
+        run: ./gradlew :voltra:testDebugUnitTest
 
   native-swift-test:
     name: '[Swift] Test'
@@ -117,7 +138,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -136,7 +157,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Check Swift formatting
@@ -155,7 +176,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       # Downloading the pinned release binary is much faster in CI than installing ktlint via Homebrew.
