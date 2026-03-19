@@ -94,8 +94,15 @@ fun RenderChart(
 
     val density = LocalContext.current.resources.displayMetrics.density
     val scale = density.coerceIn(1f, 3.5f)
-    val bitmapWidth = (chartWidthDp * scale).toInt().coerceAtLeast(1)
-    val bitmapHeight = (chartHeightDp * scale).toInt().coerceAtLeast(1)
+
+    // For sector/pie charts, use a square bitmap so the arcs don't get
+    // stretched into an ellipse by FillBounds. Use the smaller dimension
+    // to guarantee the circle fits.
+    val effectiveWidthDp = if (hasSectors) minOf(chartWidthDp, chartHeightDp) else chartWidthDp
+    val effectiveHeightDp = if (hasSectors) minOf(chartWidthDp, chartHeightDp) else chartHeightDp
+
+    val bitmapWidth = (effectiveWidthDp * scale).toInt().coerceAtLeast(1)
+    val bitmapHeight = (effectiveHeightDp * scale).toInt().coerceAtLeast(1)
 
     val bitmap =
         renderChartBitmap(
@@ -130,12 +137,13 @@ fun RenderChart(
 
     val icon = Icon.createWithBitmap(bitmap)
 
-    // Use FillBounds so the bitmap stretches to fill the allocated space,
-    // which is especially important when flex/weight controls the height.
+    // Sector charts use a square bitmap so Fit preserves the circle.
+    // Other charts use FillBounds so the bitmap stretches to fill the
+    // allocated space (important when flex/weight controls the height).
     Image(
         provider = ImageProvider(icon),
         contentDescription = "Chart",
-        contentScale = ContentScale.FillBounds,
+        contentScale = if (hasSectors) ContentScale.Fit else ContentScale.FillBounds,
         modifier = sizeModifier,
     )
 }
