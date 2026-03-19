@@ -65,17 +65,21 @@ fun RenderChart(
     val (_, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
     val styleWidth = compositeStyle?.layout?.width
     val styleHeight = compositeStyle?.layout?.height
+    val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
 
     val widthIsFill = styleWidth is SizeValue.Fill
     val heightIsFill = styleHeight is SizeValue.Fill
     val hasSectors = marks.any { it.type == "sector" }
+
+    // Use actual widget size for Fill dimensions when available, otherwise fall back to defaults
+    val widgetSize = renderContext.widgetSize
     val defaultWidth =
         if (hasSectors && heightIsFill &&
             widthIsFill
         ) {
-            DEFAULT_CHART_HEIGHT_DP
+            widgetSize?.height?.value?.toInt() ?: DEFAULT_CHART_HEIGHT_DP
         } else {
-            DEFAULT_CHART_WIDTH_DP
+            widgetSize?.width?.value?.toInt() ?: DEFAULT_CHART_WIDTH_DP
         }
     val chartWidthDp =
         when (styleWidth) {
@@ -85,7 +89,7 @@ fun RenderChart(
     val chartHeightDp =
         when (styleHeight) {
             is SizeValue.Fixed -> styleHeight.value.value.toInt()
-            else -> DEFAULT_CHART_HEIGHT_DP
+            else -> widgetSize?.height?.value?.toInt() ?: DEFAULT_CHART_HEIGHT_DP
         }
 
     val density = LocalContext.current.resources.displayMetrics.density
@@ -114,20 +118,24 @@ fun RenderChart(
                 else -> GlanceModifier.width(chartWidthDp.dp)
             },
         )
-    sizeModifier =
-        sizeModifier.then(
-            when {
-                heightIsFill -> GlanceModifier.fillMaxHeight()
-                else -> GlanceModifier.height(chartHeightDp.dp)
-            },
-        )
+    if (!hasWeight) {
+        sizeModifier =
+            sizeModifier.then(
+                when {
+                    heightIsFill -> GlanceModifier.fillMaxHeight()
+                    else -> GlanceModifier.height(chartHeightDp.dp)
+                },
+            )
+    }
 
     val icon = Icon.createWithBitmap(bitmap)
 
+    // Use FillBounds so the bitmap stretches to fill the allocated space,
+    // which is especially important when flex/weight controls the height.
     Image(
         provider = ImageProvider(icon),
         contentDescription = "Chart",
-        contentScale = ContentScale.Fit,
+        contentScale = ContentScale.FillBounds,
         modifier = sizeModifier,
     )
 }
